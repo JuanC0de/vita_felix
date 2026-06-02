@@ -36,7 +36,7 @@
   - _Requirements: 3.1, 4.3_
   - _Boundary: Custom Access Token Hook_
   - _Depends: 2.1_
-- [ ] 2.5 Crear datos semilla mínimos
+- [x] 2.5 Crear datos semilla mínimos
   - Aprovisionar una empresa de ejemplo y un usuario SUPER_ADMIN para habilitar pruebas de extremo a extremo.
   - Observable: existe al menos un usuario que puede autenticarse y un registro de empresa asociado.
   - _Requirements: 4.1, 4.2_
