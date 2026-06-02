@@ -110,7 +110,7 @@
   - _Depends: 2.3, 2.5, 4.3, 5.1, 5.2_
 
 - [ ] 7. Validación: pruebas
-- [ ] 7.1 Pruebas unitarias de autorización
+- [x] 7.1 Pruebas unitarias de autorización
   - Cubrir la matriz de roles en la guarda de rol, la derivación de cuenta no habilitada y el filtrado de navegación por rol.
   - Observable: las pruebas pasan y demuestran concesión/denegación correcta por rol.
   - _Requirements: 3.3, 3.4, 4.4, 6.2_

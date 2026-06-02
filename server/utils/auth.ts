@@ -1,30 +1,29 @@
 import { serverSupabaseUser } from '#supabase/server'
 import { createError, type H3Event } from 'h3'
-import { isAppRole, type AppRole, type AuthContext } from '~/types/auth'
+import type { AppRole, AuthContext } from '~/types/auth'
+import { buildAuthContext, isAuthorized } from '~/utils/authz'
 
 /**
  * Deriva el AuthContext desde la sesión validada del lado servidor.
  * La identidad proviene de `serverSupabaseUser` (verifica el JWT contra Supabase);
- * nunca se confía en valores enviados por el cliente.
- *
- * Devuelve `null` si no hay sesión válida. Para un usuario autenticado sin claim
- * de rol (sin perfil habilitado), devuelve `status: 'disabled'` y `role: null`.
+ * nunca se confía en valores enviados por el cliente. La lógica de mapeo es pura
+ * (ver `~/utils/authz`) y está cubierta por pruebas unitarias.
  */
 export async function getAuthContext(event: H3Event): Promise<AuthContext | null> {
   const user = await serverSupabaseUser(event).catch(() => null)
   if (!user) return null
-
-  const meta = (user.app_metadata ?? {}) as Record<string, unknown>
-  const role: AppRole | null = isAppRole(meta.role) ? meta.role : null
-  const companyId = typeof meta.company_id === 'string' ? meta.company_id : null
-
-  return {
-    userId: user.id,
-    email: user.email ?? '',
-    companyId: role ? companyId : null,
-    role,
-    status: role ? 'active' : 'disabled',
+  // `serverSupabaseUser` puede devolver un User (id) o el payload del JWT (sub).
+  const u = user as {
+    id?: string
+    sub?: string
+    email?: string | null
+    app_metadata?: Record<string, unknown> | null
   }
+  return buildAuthContext({
+    id: u.id ?? u.sub ?? '',
+    email: u.email ?? null,
+    app_metadata: u.app_metadata ?? null,
+  })
 }
 
 /**
@@ -45,7 +44,7 @@ export async function requireUser(event: H3Event): Promise<AuthContext> {
  */
 export async function requireRole(event: H3Event, roles: AppRole[]): Promise<AuthContext> {
   const ctx = await requireUser(event)
-  if (ctx.status === 'disabled' || ctx.role === null || !roles.includes(ctx.role)) {
+  if (!isAuthorized(ctx, roles)) {
     throw createError({ statusCode: 403, statusMessage: 'Acceso denegado' })
   }
   return ctx
