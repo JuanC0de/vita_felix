@@ -1,7 +1,7 @@
 # Implementation Plan
 
 - [ ] 1. Foundation: inicialización del proyecto y contratos base
-- [ ] 1.1 Inicializar la aplicación Nuxt 4 con Tailwind y el módulo de Supabase
+- [x] 1.1 Inicializar la aplicación Nuxt 4 con Tailwind y el módulo de Supabase
   - Crear el proyecto Nuxt 4 (srcDir `app/`), integrar Tailwind CSS y registrar el módulo de Supabase con sesiones server-side por cookies (PKCE).
   - Definir las variables de entorno necesarias (URL del proyecto, clave publishable, service role) en un archivo de ejemplo, sin valores reales.
   - Observable: `npm run dev` levanta la app, una página base renderiza con estilos Tailwind y el módulo Supabase carga sin errores de configuración.
