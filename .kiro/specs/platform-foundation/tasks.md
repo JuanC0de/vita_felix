@@ -24,7 +24,7 @@
   - _Requirements: 1.1, 1.4_
   - _Boundary: Helpers y políticas RLS_
   - _Depends: 2.1_
-- [ ] 2.3 Definir y forzar las políticas RLS de empresas y perfiles
+- [x] 2.3 Definir y forzar las políticas RLS de empresas y perfiles
   - Habilitar y forzar RLS; crear políticas separadas de lectura y escritura que aíslan por empresa (con verificación en escritura) y conceden acceso transversal a SUPER_ADMIN; denegar todo acceso sin identidad válida.
   - Observable: un usuario de la empresa A no obtiene ni modifica filas de la empresa B; SUPER_ADMIN sí; una consulta sin sesión no devuelve filas.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 7.1_
