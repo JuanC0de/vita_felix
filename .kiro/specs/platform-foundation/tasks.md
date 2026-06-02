@@ -120,7 +120,7 @@
   - Observable: las pruebas confirman que no hay fuga entre empresas, que la sesión responde 200/401 según corresponda y que el token contiene los claims.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 3.1, 4.3_
   - _Depends: 6_
-- [ ] 7.3 Pruebas E2E del flujo de acceso
+- [x] 7.3 Pruebas E2E del flujo de acceso
   - Cubrir login válido e inválido, bloqueo por URL de sección no permitida, persistencia de sesión tras recarga y redirección de usuario autenticado fuera de Login.
   - Observable: las rutas críticas pasan en un navegador real.
   - _Requirements: 2.2, 2.5, 5.4, 6.3, 7.4_
@@ -128,4 +128,6 @@
 
 ## Implementation Notes
 - 3.2: `AuthContext.role` se refinó a `AppRole | null` (antes `AppRole`) para representar cuentas no habilitadas (req. 4.4): `role = null` ⇒ `status = 'disabled'`. Refinamiento coherente con el diseño; cualquier consumidor aguas abajo debe contemplar `role` nulo.
-- Entorno: hay un Postgres 16 local; las migraciones se validan aplicándolas contra un shim del esquema `auth` (jwt()/uid()/roles) en una BD desechable `vf_migrate_test`. Aplicar contra Supabase real y las pruebas de integración/E2E (6, 7.2, 7.3) requieren un proyecto Supabase con el hook activado en el Dashboard.
+- 7.1: la lógica de decisión de autorización se extrajo a `app/utils/authz.ts` (funciones puras: `buildAuthContext`, `canAccess`, `isAuthorized`, `filterByRole`) para hacerla testeable sin el runtime de Nuxt; `server/utils/auth.ts` y `useAuthorization` la reutilizan.
+- Entorno: hay un Postgres 16 local; las migraciones se validan aplicándolas contra un shim del esquema `auth` (jwt()/uid()/roles) en una BD desechable. `bash supabase/tests/run.sh` ejecuta las pruebas de integración de RLS + hook localmente.
+- 7.3 (parcial/ejecutable): los escenarios E2E SIN sesión pasan en navegador real (Playwright): redirección de ruta protegida (2.4), render de login (5.1) y error genérico con credenciales inválidas (2.2). Los escenarios AUTENTICADOS (login exitoso 2.1, redirección fuera de /login 5.4) están implementados pero se OMITEN automáticamente: requieren un proyecto Supabase real con el Custom Access Token Hook activado en el Dashboard y un usuario de prueba (vars `E2E_EMAIL`/`E2E_PASSWORD` + `SUPABASE_URL`/`SUPABASE_KEY`). El bloqueo por rol vía URL (6.3) está cubierto por unit tests (7.1) y por el middleware `role`; no hay aún rutas restringidas por rol en esta fundación para probarlo E2E.

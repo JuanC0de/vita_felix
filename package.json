@@ -9,13 +9,15 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "typecheck": "nuxt typecheck",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.9",
     "nuxt": "^4.4.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
