@@ -13,7 +13,7 @@
   - _Boundary: types/auth_
 
 - [ ] 2. Esquema de datos y seguridad multi-tenant
-- [ ] 2.1 Crear el esquema de tenancy
+- [x] 2.1 Crear el esquema de tenancy
   - Definir las tablas de empresas y de perfiles (vínculo usuario↔empresa↔rol) y el enum de roles, con integridad referencial e índice compuesto liderado por la empresa.
   - Observable: la migración aplica sin errores y crea las tablas; un perfil no SUPER_ADMIN exige empresa y rol.
   - _Requirements: 4.1, 4.2_
