@@ -96,7 +96,7 @@
   - _Requirements: 4.4, 6.1, 6.2, 6.4_
   - _Boundary: Login + Dashboard shell, useAuthorization_
   - _Depends: 4.2_
-- [ ] 5.2 (P) Construir la pantalla de Login y la página de confirmación
+- [x] 5.2 (P) Construir la pantalla de Login y la página de confirmación
   - Formulario de credenciales con validación de campos y estado de carga que evita envíos duplicados, mensajes de error genéricos ante credenciales inválidas, y la página de callback del flujo de autenticación.
   - Observable: credenciales válidas llevan al Dashboard; inválidas muestran un error genérico; campos vacíos/ inválidos no envían la solicitud; durante el envío se muestra progreso.
   - _Requirements: 2.1, 2.2, 5.1, 5.2, 5.3_
