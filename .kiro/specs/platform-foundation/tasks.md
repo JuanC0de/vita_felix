@@ -1,0 +1,127 @@
+# Implementation Plan
+
+- [ ] 1. Foundation: inicialización del proyecto y contratos base
+- [ ] 1.1 Inicializar la aplicación Nuxt 4 con Tailwind y el módulo de Supabase
+  - Crear el proyecto Nuxt 4 (srcDir `app/`), integrar Tailwind CSS y registrar el módulo de Supabase con sesiones server-side por cookies (PKCE).
+  - Definir las variables de entorno necesarias (URL del proyecto, clave publishable, service role) en un archivo de ejemplo, sin valores reales.
+  - Observable: `npm run dev` levanta la app, una página base renderiza con estilos Tailwind y el módulo Supabase carga sin errores de configuración.
+  - _Requirements: 2.5_
+- [ ] 1.2 Definir los tipos compartidos de identidad y dominio
+  - Declarar el enum de los cuatro roles (SUPER_ADMIN, COMPANY_ADMIN, EVENT_MANAGER, GATE_STAFF) y el contrato de identidad `AuthContext` (usuario, empresa, rol, estado).
+  - Observable: los tipos compilan en modo estricto de TypeScript (sin `any`) y quedan disponibles para importarse desde las capas server y cliente.
+  - _Requirements: 3.1, 3.6_
+  - _Boundary: types/auth_
+
+- [ ] 2. Esquema de datos y seguridad multi-tenant
+- [ ] 2.1 Crear el esquema de tenancy
+  - Definir las tablas de empresas y de perfiles (vínculo usuario↔empresa↔rol) y el enum de roles, con integridad referencial e índice compuesto liderado por la empresa.
+  - Observable: la migración aplica sin errores y crea las tablas; un perfil no SUPER_ADMIN exige empresa y rol.
+  - _Requirements: 4.1, 4.2_
+  - _Boundary: Esquema de tenancy_
+- [ ] 2.2 Implementar las funciones helper de aislamiento
+  - Crear funciones que derivan la empresa y el rol del usuario desde el JWT y un helper para identificar SUPER_ADMIN, optimizadas para evaluarse una vez por consulta.
+  - Observable: las funciones devuelven la empresa/rol del token de un usuario autenticado y se pueden usar dentro de políticas.
+  - _Requirements: 1.1, 1.4_
+  - _Boundary: Helpers y políticas RLS_
+  - _Depends: 2.1_
+- [ ] 2.3 Definir y forzar las políticas RLS de empresas y perfiles
+  - Habilitar y forzar RLS; crear políticas separadas de lectura y escritura que aíslan por empresa (con verificación en escritura) y conceden acceso transversal a SUPER_ADMIN; denegar todo acceso sin identidad válida.
+  - Observable: un usuario de la empresa A no obtiene ni modifica filas de la empresa B; SUPER_ADMIN sí; una consulta sin sesión no devuelve filas.
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 7.1_
+  - _Boundary: Helpers y políticas RLS_
+  - _Depends: 2.2_
+- [ ] 2.4 Implementar el Custom Access Token Hook
+  - Crear la función que, antes de emitir el JWT, inyecta la empresa y el rol del perfil en `app_metadata`; si el usuario no tiene perfil habilitado, no inyecta esos claims.
+  - Observable: tras iniciar sesión, el token del usuario contiene `company_id` y `role` en `app_metadata`.
+  - _Requirements: 3.1, 4.3_
+  - _Boundary: Custom Access Token Hook_
+  - _Depends: 2.1_
+- [ ] 2.5 Crear datos semilla mínimos
+  - Aprovisionar una empresa de ejemplo y un usuario SUPER_ADMIN para habilitar pruebas de extremo a extremo.
+  - Observable: existe al menos un usuario que puede autenticarse y un registro de empresa asociado.
+  - _Requirements: 4.1, 4.2_
+  - _Boundary: Esquema de tenancy_
+  - _Depends: 2.1_
+
+- [ ] 3. Capa server-side de autenticación y autorización
+- [ ] 3.1 Encapsular el acceso a Supabase del lado servidor
+  - Proveer acceso al cliente con identidad del usuario y al cliente de service role, este último restringido al servidor y nunca expuesto al cliente.
+  - Observable: el service role solo es accesible desde código server; ninguna referencia llega al bundle del navegador.
+  - _Requirements: 7.2_
+  - _Boundary: server/utils/auth_
+  - _Depends: 1.1_
+- [ ] 3.2 Implementar los helpers de identidad y autorización
+  - Derivar `AuthContext` desde la sesión validada server-side; proveer guardas que exigen sesión (401) y que exigen rol permitido (403) sin filtrar datos sensibles; marcar como no habilitada la cuenta sin perfil/rol.
+  - Observable: una petición sin sesión recibe 401; un rol no autorizado recibe 403 sin efectos; un usuario sin perfil se reporta como no habilitado.
+  - _Requirements: 1.5, 2.6, 3.2, 3.3, 3.4, 3.5, 4.4, 7.1, 7.3_
+  - _Boundary: server/utils/auth_
+  - _Depends: 2.4, 3.1_
+- [ ] 3.3 Adjuntar el contexto de autenticación en el servidor
+  - Resolver el `AuthContext` por petición y dejarlo disponible para los manejadores server.
+  - Observable: los server routes pueden leer la identidad/empresa/rol del usuario actual sin recalcularla.
+  - _Requirements: 3.6_
+  - _Boundary: server/utils/auth, server/api/auth_
+  - _Depends: 3.2_
+- [ ] 3.4 Exponer los endpoints de sesión y cierre de sesión
+  - Endpoint que devuelve el `AuthContext` del usuario actual y endpoint que cierra la sesión del lado servidor.
+  - Observable: el endpoint de sesión devuelve la identidad correcta tras login y 401 sin sesión; el de logout invalida la sesión activa.
+  - _Requirements: 2.1, 2.3_
+  - _Boundary: server/api/auth_
+  - _Depends: 3.3_
+
+- [ ] 4. Capa de cliente: composables y guardas de ruta
+- [ ] 4.1 (P) Implementar el composable de autenticación
+  - Exponer inicio de sesión, cierre de sesión y estado de sesión, delegando la validación a Supabase y al endpoint de sesión; mantener al usuario autenticado entre recargas.
+  - Observable: iniciar sesión actualiza el estado y persiste tras recargar; cerrar sesión limpia el estado.
+  - _Requirements: 2.2, 2.5_
+  - _Boundary: useAuth_
+  - _Depends: 3.4_
+- [ ] 4.2 (P) Implementar el composable de permisos de UI y la navegación por rol
+  - Proveer un helper para evaluar si el rol actual puede ver una sección y una configuración declarativa de navegación filtrable por rol.
+  - Observable: dado un rol, el helper devuelve solo las opciones de navegación permitidas para ese rol.
+  - _Requirements: 6.2_
+  - _Boundary: useAuthorization_
+  - _Depends: 1.2_
+- [ ] 4.3 Implementar las guardas de ruta de cliente
+  - Middleware global que redirige a Login sin sesión y guarda por rol que bloquea el acceso directo por URL a secciones no permitidas, redirigiendo a usuarios ya autenticados fuera de Login.
+  - Observable: sin sesión, cualquier ruta del panel redirige a Login; un rol no autorizado que abre una URL protegida es bloqueado; un usuario autenticado en Login es redirigido al Dashboard.
+  - _Requirements: 2.4, 5.4, 6.3_
+  - _Boundary: middleware auth, middleware role_
+  - _Depends: 4.1_
+
+- [ ] 5. Pantallas mínimas
+- [ ] 5.1 (P) Construir el shell autenticado del Dashboard
+  - Layout autenticado con la identidad del usuario, acción de cierre de sesión y navegación que muestra solo las opciones del rol; comunicar el estado de cuenta no habilitada.
+  - Observable: un usuario autenticado ve su identidad, un menú acorde a su rol y puede cerrar sesión; una cuenta no habilitada ve el aviso correspondiente.
+  - _Requirements: 4.4, 6.1, 6.2, 6.4_
+  - _Boundary: Login + Dashboard shell, useAuthorization_
+  - _Depends: 4.2_
+- [ ] 5.2 (P) Construir la pantalla de Login y la página de confirmación
+  - Formulario de credenciales con validación de campos y estado de carga que evita envíos duplicados, mensajes de error genéricos ante credenciales inválidas, y la página de callback del flujo de autenticación.
+  - Observable: credenciales válidas llevan al Dashboard; inválidas muestran un error genérico; campos vacíos/ inválidos no envían la solicitud; durante el envío se muestra progreso.
+  - _Requirements: 2.1, 2.2, 5.1, 5.2, 5.3_
+  - _Boundary: Login + Dashboard shell, useAuth_
+  - _Depends: 4.1_
+
+- [ ] 6. Integración: flujo de autenticación y navegación por rol de extremo a extremo
+  - Conectar pantallas, composables, guardas, endpoints y RLS para que un usuario real inicie sesión, reciba claims, navegue según su rol y cierre sesión.
+  - Observable: un usuario semilla completa login → Dashboard con navegación por rol → cierre de sesión, y las consultas de datos quedan aisladas por empresa de extremo a extremo.
+  - _Requirements: 2.1, 2.3, 2.4, 3.6, 6.1_
+  - _Depends: 2.3, 2.5, 4.3, 5.1, 5.2_
+
+- [ ] 7. Validación: pruebas
+- [ ] 7.1 Pruebas unitarias de autorización
+  - Cubrir la matriz de roles en la guarda de rol, la derivación de cuenta no habilitada y el filtrado de navegación por rol.
+  - Observable: las pruebas pasan y demuestran concesión/denegación correcta por rol.
+  - _Requirements: 3.3, 3.4, 4.4, 6.2_
+  - _Depends: 3.2, 4.2_
+- [ ] 7.2 Pruebas de integración de aislamiento y sesión
+  - Verificar el aislamiento RLS entre empresas y el acceso transversal de SUPER_ADMIN, el endpoint de sesión con y sin sesión, y la inyección de claims por el hook.
+  - Observable: las pruebas confirman que no hay fuga entre empresas, que la sesión responde 200/401 según corresponda y que el token contiene los claims.
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 3.1, 4.3_
+  - _Depends: 6_
+- [ ] 7.3 Pruebas E2E del flujo de acceso
+  - Cubrir login válido e inválido, bloqueo por URL de sección no permitida, persistencia de sesión tras recarga y redirección de usuario autenticado fuera de Login.
+  - Observable: las rutas críticas pasan en un navegador real.
+  - _Requirements: 2.2, 2.5, 5.4, 6.3, 7.4_
+  - _Depends: 6_
