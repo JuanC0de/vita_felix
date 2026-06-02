@@ -70,7 +70,7 @@
   - _Depends: 3.3_
 
 - [ ] 4. Capa de cliente: composables y guardas de ruta
-- [ ] 4.1 (P) Implementar el composable de autenticación
+- [x] 4.1 (P) Implementar el composable de autenticación
   - Exponer inicio de sesión, cierre de sesión y estado de sesión, delegando la validación a Supabase y al endpoint de sesión; mantener al usuario autenticado entre recargas.
   - Observable: iniciar sesión actualiza el estado y persiste tras recargar; cerrar sesión limpia el estado.
   - _Requirements: 2.2, 2.5_
