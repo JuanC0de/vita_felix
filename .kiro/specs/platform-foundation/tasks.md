@@ -62,7 +62,7 @@
   - _Requirements: 3.6_
   - _Boundary: server/utils/auth, server/api/auth_
   - _Depends: 3.2_
-- [ ] 3.4 Exponer los endpoints de sesión y cierre de sesión
+- [x] 3.4 Exponer los endpoints de sesión y cierre de sesión
   - Endpoint que devuelve el `AuthContext` del usuario actual y endpoint que cierra la sesión del lado servidor.
   - Observable: el endpoint de sesión devuelve la identidad correcta tras login y 401 sin sesión; el de logout invalida la sesión activa.
   - _Requirements: 2.1, 2.3_
