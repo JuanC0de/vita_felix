@@ -82,7 +82,7 @@
   - _Requirements: 6.2_
   - _Boundary: useAuthorization_
   - _Depends: 1.2_
-- [ ] 4.3 Implementar las guardas de ruta de cliente
+- [x] 4.3 Implementar las guardas de ruta de cliente
   - Middleware global que redirige a Login sin sesión y guarda por rol que bloquea el acceso directo por URL a secciones no permitidas, redirigiendo a usuarios ya autenticados fuera de Login.
   - Observable: sin sesión, cualquier ruta del panel redirige a Login; un rol no autorizado que abre una URL protegida es bloqueado; un usuario autenticado en Login es redirigido al Dashboard.
   - _Requirements: 2.4, 5.4, 6.3_
