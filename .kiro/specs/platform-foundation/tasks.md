@@ -30,7 +30,7 @@
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 7.1_
   - _Boundary: Helpers y políticas RLS_
   - _Depends: 2.2_
-- [ ] 2.4 Implementar el Custom Access Token Hook
+- [x] 2.4 Implementar el Custom Access Token Hook
   - Crear la función que, antes de emitir el JWT, inyecta la empresa y el rol del perfil en `app_metadata`; si el usuario no tiene perfil habilitado, no inyecta esos claims.
   - Observable: tras iniciar sesión, el token del usuario contiene `company_id` y `role` en `app_metadata`.
   - _Requirements: 3.1, 4.3_
