@@ -103,7 +103,7 @@
   - _Boundary: Login + Dashboard shell, useAuth_
   - _Depends: 4.1_
 
-- [ ] 6. Integración: flujo de autenticación y navegación por rol de extremo a extremo
+- [x] 6. Integración: flujo de autenticación y navegación por rol de extremo a extremo
   - Conectar pantallas, composables, guardas, endpoints y RLS para que un usuario real inicie sesión, reciba claims, navegue según su rol y cierre sesión.
   - Observable: un usuario semilla completa login → Dashboard con navegación por rol → cierre de sesión, y las consultas de datos quedan aisladas por empresa de extremo a extremo.
   - _Requirements: 2.1, 2.3, 2.4, 3.6, 6.1_
