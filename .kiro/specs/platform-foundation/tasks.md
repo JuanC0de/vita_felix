@@ -6,7 +6,7 @@
   - Definir las variables de entorno necesarias (URL del proyecto, clave publishable, service role) en un archivo de ejemplo, sin valores reales.
   - Observable: `npm run dev` levanta la app, una página base renderiza con estilos Tailwind y el módulo Supabase carga sin errores de configuración.
   - _Requirements: 2.5_
-- [ ] 1.2 Definir los tipos compartidos de identidad y dominio
+- [x] 1.2 Definir los tipos compartidos de identidad y dominio
   - Declarar el enum de los cuatro roles (SUPER_ADMIN, COMPANY_ADMIN, EVENT_MANAGER, GATE_STAFF) y el contrato de identidad `AuthContext` (usuario, empresa, rol, estado).
   - Observable: los tipos compilan en modo estricto de TypeScript (sin `any`) y quedan disponibles para importarse desde las capas server y cliente.
   - _Requirements: 3.1, 3.6_
