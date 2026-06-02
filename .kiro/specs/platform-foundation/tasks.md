@@ -90,7 +90,7 @@
   - _Depends: 4.1_
 
 - [ ] 5. Pantallas mínimas
-- [ ] 5.1 (P) Construir el shell autenticado del Dashboard
+- [x] 5.1 (P) Construir el shell autenticado del Dashboard
   - Layout autenticado con la identidad del usuario, acción de cierre de sesión y navegación que muestra solo las opciones del rol; comunicar el estado de cuenta no habilitada.
   - Observable: un usuario autenticado ve su identidad, un menú acorde a su rol y puede cerrar sesión; una cuenta no habilitada ve el aviso correspondiente.
   - _Requirements: 4.4, 6.1, 6.2, 6.4_
