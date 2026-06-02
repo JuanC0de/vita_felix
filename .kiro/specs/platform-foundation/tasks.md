@@ -76,7 +76,7 @@
   - _Requirements: 2.2, 2.5_
   - _Boundary: useAuth_
   - _Depends: 3.4_
-- [ ] 4.2 (P) Implementar el composable de permisos de UI y la navegación por rol
+- [x] 4.2 (P) Implementar el composable de permisos de UI y la navegación por rol
   - Proveer un helper para evaluar si el rol actual puede ver una sección y una configuración declarativa de navegación filtrable por rol.
   - Observable: dado un rol, el helper devuelve solo las opciones de navegación permitidas para ese rol.
   - _Requirements: 6.2_
