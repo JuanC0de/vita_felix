@@ -56,7 +56,7 @@
   - _Requirements: 1.5, 2.6, 3.2, 3.3, 3.4, 3.5, 4.4, 7.1, 7.3_
   - _Boundary: server/utils/auth_
   - _Depends: 2.4, 3.1_
-- [ ] 3.3 Adjuntar el contexto de autenticación en el servidor
+- [x] 3.3 Adjuntar el contexto de autenticación en el servidor
   - Resolver el `AuthContext` por petición y dejarlo disponible para los manejadores server.
   - Observable: los server routes pueden leer la identidad/empresa/rol del usuario actual sin recalcularla.
   - _Requirements: 3.6_
