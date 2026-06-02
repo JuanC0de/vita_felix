@@ -19,14 +19,15 @@ export type AccountStatus = 'active' | 'disabled'
 
 /**
  * Identidad confiable de un usuario autenticado, resuelta del lado servidor.
- * `companyId` es `null` únicamente para SUPER_ADMIN (acceso transversal).
- * `status: 'disabled'` indica un usuario autenticado sin perfil/rol habilitado.
+ * - `companyId` es `null` para SUPER_ADMIN (acceso transversal) o cuentas no habilitadas.
+ * - `role` es `null` cuando la cuenta no está habilitada (sin claim de rol).
+ * - `status: 'disabled'` indica un usuario autenticado sin perfil/rol habilitado (req. 4.4).
  */
 export interface AuthContext {
   userId: string
   email: string
   companyId: string | null
-  role: AppRole
+  role: AppRole | null
   status: AccountStatus
 }
 

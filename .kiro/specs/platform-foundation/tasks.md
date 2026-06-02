@@ -50,7 +50,7 @@
   - _Requirements: 7.2_
   - _Boundary: server/utils/auth_
   - _Depends: 1.1_
-- [ ] 3.2 Implementar los helpers de identidad y autorización
+- [x] 3.2 Implementar los helpers de identidad y autorización
   - Derivar `AuthContext` desde la sesión validada server-side; proveer guardas que exigen sesión (401) y que exigen rol permitido (403) sin filtrar datos sensibles; marcar como no habilitada la cuenta sin perfil/rol.
   - Observable: una petición sin sesión recibe 401; un rol no autorizado recibe 403 sin efectos; un usuario sin perfil se reporta como no habilitado.
   - _Requirements: 1.5, 2.6, 3.2, 3.3, 3.4, 3.5, 4.4, 7.1, 7.3_
@@ -125,3 +125,7 @@
   - Observable: las rutas críticas pasan en un navegador real.
   - _Requirements: 2.2, 2.5, 5.4, 6.3, 7.4_
   - _Depends: 6_
+
+## Implementation Notes
+- 3.2: `AuthContext.role` se refinó a `AppRole | null` (antes `AppRole`) para representar cuentas no habilitadas (req. 4.4): `role = null` ⇒ `status = 'disabled'`. Refinamiento coherente con el diseño; cualquier consumidor aguas abajo debe contemplar `role` nulo.
+- Entorno: hay un Postgres 16 local; las migraciones se validan aplicándolas contra un shim del esquema `auth` (jwt()/uid()/roles) en una BD desechable `vf_migrate_test`. Aplicar contra Supabase real y las pruebas de integración/E2E (6, 7.2, 7.3) requieren un proyecto Supabase con el hook activado en el Dashboard.
