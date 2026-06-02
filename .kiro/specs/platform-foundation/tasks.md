@@ -115,7 +115,7 @@
   - Observable: las pruebas pasan y demuestran concesión/denegación correcta por rol.
   - _Requirements: 3.3, 3.4, 4.4, 6.2_
   - _Depends: 3.2, 4.2_
-- [ ] 7.2 Pruebas de integración de aislamiento y sesión
+- [x] 7.2 Pruebas de integración de aislamiento y sesión
   - Verificar el aislamiento RLS entre empresas y el acceso transversal de SUPER_ADMIN, el endpoint de sesión con y sin sesión, y la inyección de claims por el hook.
   - Observable: las pruebas confirman que no hay fuga entre empresas, que la sesión responde 200/401 según corresponda y que el token contiene los claims.
   - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 2.1, 3.1, 4.3_
