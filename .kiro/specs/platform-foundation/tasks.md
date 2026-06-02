@@ -44,7 +44,7 @@
   - _Depends: 2.1_
 
 - [ ] 3. Capa server-side de autenticación y autorización
-- [ ] 3.1 Encapsular el acceso a Supabase del lado servidor
+- [x] 3.1 Encapsular el acceso a Supabase del lado servidor
   - Proveer acceso al cliente con identidad del usuario y al cliente de service role, este último restringido al servidor y nunca expuesto al cliente.
   - Observable: el service role solo es accesible desde código server; ninguna referencia llega al bundle del navegador.
   - _Requirements: 7.2_
