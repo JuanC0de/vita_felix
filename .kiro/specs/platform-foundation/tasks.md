@@ -1,6 +1,6 @@
 # Implementation Plan
 
-- [ ] 1. Foundation: inicialización del proyecto y contratos base
+- [x] 1. Foundation: inicialización del proyecto y contratos base
 - [x] 1.1 Inicializar la aplicación Nuxt 4 con Tailwind y el módulo de Supabase
   - Crear el proyecto Nuxt 4 (srcDir `app/`), integrar Tailwind CSS y registrar el módulo de Supabase con sesiones server-side por cookies (PKCE).
   - Definir las variables de entorno necesarias (URL del proyecto, clave publishable, service role) en un archivo de ejemplo, sin valores reales.
@@ -12,7 +12,7 @@
   - _Requirements: 3.1, 3.6_
   - _Boundary: types/auth_
 
-- [ ] 2. Esquema de datos y seguridad multi-tenant
+- [x] 2. Esquema de datos y seguridad multi-tenant
 - [x] 2.1 Crear el esquema de tenancy
   - Definir las tablas de empresas y de perfiles (vínculo usuario↔empresa↔rol) y el enum de roles, con integridad referencial e índice compuesto liderado por la empresa.
   - Observable: la migración aplica sin errores y crea las tablas; un perfil no SUPER_ADMIN exige empresa y rol.
@@ -43,7 +43,7 @@
   - _Boundary: Esquema de tenancy_
   - _Depends: 2.1_
 
-- [ ] 3. Capa server-side de autenticación y autorización
+- [x] 3. Capa server-side de autenticación y autorización
 - [x] 3.1 Encapsular el acceso a Supabase del lado servidor
   - Proveer acceso al cliente con identidad del usuario y al cliente de service role, este último restringido al servidor y nunca expuesto al cliente.
   - Observable: el service role solo es accesible desde código server; ninguna referencia llega al bundle del navegador.
@@ -69,7 +69,7 @@
   - _Boundary: server/api/auth_
   - _Depends: 3.3_
 
-- [ ] 4. Capa de cliente: composables y guardas de ruta
+- [x] 4. Capa de cliente: composables y guardas de ruta
 - [x] 4.1 (P) Implementar el composable de autenticación
   - Exponer inicio de sesión, cierre de sesión y estado de sesión, delegando la validación a Supabase y al endpoint de sesión; mantener al usuario autenticado entre recargas.
   - Observable: iniciar sesión actualiza el estado y persiste tras recargar; cerrar sesión limpia el estado.
@@ -89,7 +89,7 @@
   - _Boundary: middleware auth, middleware role_
   - _Depends: 4.1_
 
-- [ ] 5. Pantallas mínimas
+- [x] 5. Pantallas mínimas
 - [x] 5.1 (P) Construir el shell autenticado del Dashboard
   - Layout autenticado con la identidad del usuario, acción de cierre de sesión y navegación que muestra solo las opciones del rol; comunicar el estado de cuenta no habilitada.
   - Observable: un usuario autenticado ve su identidad, un menú acorde a su rol y puede cerrar sesión; una cuenta no habilitada ve el aviso correspondiente.
@@ -109,7 +109,7 @@
   - _Requirements: 2.1, 2.3, 2.4, 3.6, 6.1_
   - _Depends: 2.3, 2.5, 4.3, 5.1, 5.2_
 
-- [ ] 7. Validación: pruebas
+- [x] 7. Validación: pruebas
 - [x] 7.1 Pruebas unitarias de autorización
   - Cubrir la matriz de roles en la guarda de rol, la derivación de cuenta no habilitada y el filtrado de navegación por rol.
   - Observable: las pruebas pasan y demuestran concesión/denegación correcta por rol.
