@@ -18,7 +18,7 @@
   - Observable: la migración aplica sin errores y crea las tablas; un perfil no SUPER_ADMIN exige empresa y rol.
   - _Requirements: 4.1, 4.2_
   - _Boundary: Esquema de tenancy_
-- [ ] 2.2 Implementar las funciones helper de aislamiento
+- [x] 2.2 Implementar las funciones helper de aislamiento
   - Crear funciones que derivan la empresa y el rol del usuario desde el JWT y un helper para identificar SUPER_ADMIN, optimizadas para evaluarse una vez por consulta.
   - Observable: las funciones devuelven la empresa/rol del token de un usuario autenticado y se pueden usar dentro de políticas.
   - _Requirements: 1.1, 1.4_
