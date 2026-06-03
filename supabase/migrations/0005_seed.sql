@@ -25,7 +25,12 @@ begin
     insert into auth.users (
       id, instance_id, aud, role, email, encrypted_password,
       email_confirmed_at, created_at, updated_at,
-      raw_app_meta_data, raw_user_meta_data
+      raw_app_meta_data, raw_user_meta_data,
+      -- GoTrue lee estas columnas como string; deben ser '' (no NULL) o el login
+      -- falla con "Database error querying schema".
+      confirmation_token, recovery_token, email_change,
+      email_change_token_new, email_change_token_current,
+      phone_change, phone_change_token, reauthentication_token
     ) values (
       v_user_id,
       '00000000-0000-0000-0000-000000000000',
@@ -33,7 +38,8 @@ begin
       crypt('ChangeMe123!', gen_salt('bf')),
       now(), now(), now(),
       '{"provider":"email","providers":["email"]}'::jsonb,
-      '{}'::jsonb
+      '{}'::jsonb,
+      '', '', '', '', '', '', '', ''
     );
   end if;
 

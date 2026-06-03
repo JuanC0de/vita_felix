@@ -2,12 +2,20 @@
 definePageMeta({ layout: 'auth' })
 
 const { signIn } = useAuth()
+const supabaseUser = useSupabaseUser()
 
 const email = ref('')
 const password = ref('')
 const loading = ref(false)
 const fieldError = ref('')
 const errorMsg = ref('')
+
+// Navega al dashboard solo cuando la sesión ya está establecida en el cliente.
+// Evita una condición de carrera: si navegáramos justo tras signIn, la guarda
+// global podría leer aún un usuario nulo y rebotar de vuelta a /login.
+watch(supabaseUser, (user) => {
+  if (user) navigateTo('/')
+})
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -31,11 +39,11 @@ async function onSubmit() {
   loading.value = true
   try {
     await signIn(email.value.trim(), password.value)
-    await navigateTo('/')
+    // La navegación al dashboard la dispara el watcher de supabaseUser cuando
+    // la sesión queda lista.
   } catch {
     // Mensaje genérico: no revela si falló usuario o contraseña (req. 2.2).
     errorMsg.value = 'Credenciales inválidas. Verifica e intenta de nuevo.'
-  } finally {
     loading.value = false
   }
 }

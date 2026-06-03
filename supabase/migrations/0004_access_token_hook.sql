@@ -42,3 +42,9 @@ grant usage on schema public to supabase_auth_admin;
 grant execute on function public.custom_access_token_hook(jsonb) to supabase_auth_admin;
 grant select on public.profiles to supabase_auth_admin;
 revoke execute on function public.custom_access_token_hook(jsonb) from authenticated, anon, public;
+
+-- CRÍTICO: el hook es SECURITY INVOKER y se ejecuta como supabase_auth_admin, por
+-- lo que está sujeto a RLS al leer profiles. Sin esta política, la consulta del
+-- perfil devuelve 0 filas y el rol no se inyecta en el JWT (patrón oficial Supabase).
+create policy profiles_auth_admin_read on public.profiles
+  for select to supabase_auth_admin using (true);
