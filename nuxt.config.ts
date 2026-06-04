@@ -7,7 +7,20 @@ export default defineNuxtConfig({
 
   modules: ['@nuxtjs/supabase'],
 
+  components: [
+    { path: '~/components/ui', pathPrefix: false },
+    '~/components'
+  ],
+
   css: ['~/assets/css/tailwind.css'],
+
+  // Secretos server-only de ticketing (nunca llegan al cliente).
+  // Se sobreescriben con NUXT_QR_JWT_SECRET / NUXT_ATTENDEE_ENC_KEY / NUXT_QR_GRACE_HOURS.
+  runtimeConfig: {
+    qrJwtSecret: '',
+    attendeeEncKey: '',
+    qrGraceHours: '12',
+  },
 
   vite: {
     plugins: [tailwindcss()],

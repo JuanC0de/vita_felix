@@ -26,6 +26,12 @@ export default defineConfig({
       NUXT_PUBLIC_SUPABASE_KEY: fakeKey,
       SUPABASE_URL: fakeUrl,
       SUPABASE_KEY: fakeKey,
+      // Secretos de ticketing (server-only). Se propagan si están definidos; el
+      // flujo completo de registro/check-in requiere además un Supabase real.
+      NUXT_QR_JWT_SECRET: process.env.NUXT_QR_JWT_SECRET ?? 'e2e-qr-secret-not-for-production-1234',
+      NUXT_ATTENDEE_ENC_KEY:
+        process.env.NUXT_ATTENDEE_ENC_KEY ?? 'MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=',
+      NUXT_QR_GRACE_HOURS: process.env.NUXT_QR_GRACE_HOURS ?? '12',
     },
   },
 })

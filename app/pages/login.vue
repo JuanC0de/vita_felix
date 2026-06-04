@@ -10,9 +10,6 @@ const loading = ref(false)
 const fieldError = ref('')
 const errorMsg = ref('')
 
-// Navega al dashboard solo cuando la sesión ya está establecida en el cliente.
-// Evita una condición de carrera: si navegáramos justo tras signIn, la guarda
-// global podría leer aún un usuario nulo y rebotar de vuelta a /login.
 watch(supabaseUser, (user) => {
   if (user) navigateTo('/')
 })
@@ -35,52 +32,102 @@ function validate(): boolean {
 async function onSubmit() {
   errorMsg.value = ''
   if (!validate()) return
-  if (loading.value) return // evita envíos duplicados (req. 5.3)
+  if (loading.value) return
   loading.value = true
   try {
     await signIn(email.value.trim(), password.value)
-    // La navegación al dashboard la dispara el watcher de supabaseUser cuando
-    // la sesión queda lista.
   } catch {
-    // Mensaje genérico: no revela si falló usuario o contraseña (req. 2.2).
-    errorMsg.value = 'Credenciales inválidas. Verifica e intenta de nuevo.'
+    errorMsg.value = 'Credenciales incorrectas. Revisa e intenta otra vez.'
     loading.value = false
   }
 }
 </script>
 
 <template>
-  <form class="space-y-4" novalidate @submit.prevent="onSubmit">
-    <div>
-      <label for="email" class="mb-1 block text-sm font-medium text-slate-700">Correo</label>
-      <input
-        id="email"
-        v-model="email"
-        type="email"
-        autocomplete="email"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none"
-      >
-    </div>
-    <div>
-      <label for="password" class="mb-1 block text-sm font-medium text-slate-700">Contraseña</label>
-      <input
-        id="password"
-        v-model="password"
-        type="password"
-        autocomplete="current-password"
-        class="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none"
-      >
-    </div>
+  <div class="space-y-6">
+    <header class="space-y-1 text-center">
+      <h1 class="text-2xl font-semibold tracking-tight text-white">
+        Iniciar sesión
+      </h1>
+      <p class="text-sm text-slate-400">
+        Entra con tu cuenta de trabajo.
+      </p>
+    </header>
 
-    <p v-if="fieldError" class="text-sm text-amber-700">{{ fieldError }}</p>
-    <p v-if="errorMsg" class="text-sm text-red-600">{{ errorMsg }}</p>
+    <form class="space-y-5" novalidate @submit.prevent="onSubmit">
+      <div class="login-field">
+        <AppInput
+          id="email"
+          v-model="email"
+          type="email"
+          label="Correo"
+          placeholder="tu@empresa.com"
+          autocomplete="email"
+          required
+        />
+      </div>
 
-    <button
-      type="submit"
-      :disabled="loading"
-      class="w-full rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      {{ loading ? 'Ingresando…' : 'Iniciar sesión' }}
-    </button>
-  </form>
+      <div class="login-field">
+        <AppInput
+          id="password"
+          v-model="password"
+          type="password"
+          label="Contraseña"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+
+      <p
+        v-if="fieldError"
+        role="alert"
+        class="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 text-sm text-amber-200"
+      >
+        {{ fieldError }}
+      </p>
+
+      <p
+        v-if="errorMsg"
+        role="alert"
+        class="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2.5 text-sm text-rose-200"
+      >
+        {{ errorMsg }}
+      </p>
+
+      <AppButton
+        type="submit"
+        :loading="loading"
+        size="lg"
+        class="login-submit w-full !rounded-xl !border-0 !bg-gradient-to-r !from-violet-600 !to-indigo-600 !py-3 !text-base !font-semibold !text-white shadow-lg shadow-violet-600/25 hover:!from-violet-500 hover:!to-indigo-500 focus:!ring-violet-400/50 motion-safe:active:scale-[0.99]"
+      >
+        Entrar
+      </AppButton>
+    </form>
+  </div>
 </template>
+
+<style scoped>
+.login-field :deep(label) {
+  color: rgb(203 213 225);
+}
+
+.login-field :deep(input) {
+  border-color: rgb(255 255 255 / 0.12);
+  background-color: rgb(255 255 255 / 0.06);
+  color: rgb(248 250 252);
+}
+
+.login-field :deep(input::placeholder) {
+  color: rgb(148 163 184 / 0.7);
+}
+
+.login-field :deep(input:focus) {
+  border-color: rgb(167 139 250 / 0.6);
+  --tw-ring-color: rgb(167 139 250 / 0.35);
+}
+
+.login-field :deep(span.text-rose-500) {
+  color: rgb(251 191 36);
+}
+</style>

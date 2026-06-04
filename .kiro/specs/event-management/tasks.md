@@ -1,0 +1,137 @@
+# Implementation Plan
+
+- [x] 1. Contratos de dominio
+- [x] 1.1 Definir los tipos de dominio de eventos y boletería
+  - Declarar `EventStatus` (draft, published, finished, cancelled), `Event`, `TicketTier` y los payloads de escritura (Create/Update) en tipos estrictos.
+  - Observable: los tipos compilan en modo estricto de TypeScript (sin `any`) y quedan disponibles para importarse desde las capas server y cliente.
+  - _Requirements: 3.1, 4.1, 5.1_
+  - _Boundary: types/events_
+
+- [x] 2. Esquema de datos y seguridad multi-tenant
+- [x] 2.1 Crear el esquema de eventos
+  - Definir el enum de estado de evento y la tabla de eventos (pertenece a una empresa) con nombre, lugar, fecha/hora, estado por defecto borrador, integridad referencial e índice liderado por empresa.
+  - Observable: la migración aplica sin errores y crea el enum y la tabla; un evento exige nombre, lugar y fecha/hora no nulos y arranca en estado borrador.
+  - _Requirements: 1.1, 3.1, 3.2, 4.1_
+  - _Boundary: Esquema events/ticket_tiers_
+  - _Depends: 1.1_
+- [x] 2.2 Crear el esquema de etapas de boletería
+  - Definir la tabla de tiers (pertenece a un evento) con nombre, precio (≥ 0), moneda (ISO 4217) y cupo entero (≥ 0); FK al evento con borrado en cascada y `company_id` desnormalizado para RLS.
+  - Observable: la migración aplica sin errores; un tier exige nombre, precio ≥ 0, moneda de 3 letras y cupo ≥ 0; al borrar un evento se borran sus tiers.
+  - _Requirements: 1.6, 3.5, 5.1, 5.2_
+  - _Boundary: Esquema events/ticket_tiers_
+  - _Depends: 2.1_
+- [x] 2.3 Definir y forzar las políticas RLS de eventos y boletería
+  - Habilitar y forzar RLS reutilizando los helpers de la foundation; aislar lectura por empresa (cualquier rol autenticado de la empresa) con acceso transversal de SUPER_ADMIN; restringir escritura a COMPANY_ADMIN/EVENT_MANAGER y la eliminación de eventos a COMPANY_ADMIN; verificar en escritura que la empresa coincide y que el tier hereda la empresa del evento.
+  - Observable: un usuario de la empresa A no lee ni escribe eventos/tiers de la empresa B; SUPER_ADMIN sí; EVENT_MANAGER inserta/actualiza pero su DELETE de evento no afecta filas; GATE_STAFF no escribe.
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3, 7.1, 7.2_
+  - _Boundary: RLS de events/tiers_
+  - _Depends: 2.2_
+
+- [x] 3. Capa server-side: lógica pura, acceso a datos y API
+- [x] 3.1 (P) Implementar la máquina de transiciones de estado
+  - Función pura que define las transiciones permitidas (borrador→publicado/cancelado, publicado→finalizado/cancelado; finalizado/cancelado terminales) y expone si un estado está abierto al registro (solo publicado).
+  - Observable: la matriz de transiciones devuelve el estado destino o nulo según corresponda, y solo el estado publicado se reporta como abierto al registro.
+  - _Requirements: 4.1, 4.4, 4.5, 4.6_
+  - _Boundary: server/utils/event-status_
+  - _Depends: 1.1_
+- [x] 3.2 (P) Implementar la validación de entrada de eventos y tiers
+  - Módulo puro que valida payloads de evento (nombre, fecha/hora, lugar) y de tier (nombre, precio ≥ 0, moneda ISO 4217, cupo entero ≥ 0), devolviendo la lista de campos inválidos sin lanzar.
+  - Observable: un evento sin nombre/fecha/lugar y un tier con precio o cupo negativo, moneda inválida o nombre vacío devuelven errores de campo; los payloads válidos devuelven el modelo saneado.
+  - _Requirements: 3.2, 3.3, 5.2, 5.3, 7.4_
+  - _Boundary: server/utils/events-validation_
+  - _Depends: 1.1_
+- [x] 3.3 Implementar el acceso a datos encapsulado
+  - Repositorio server-side que usa el cliente Supabase con identidad del usuario (RLS) para listar, obtener, crear, actualizar y eliminar eventos y tiers, dejando el aislamiento por empresa a la base de datos.
+  - Observable: las operaciones del repositorio devuelven solo datos de la empresa del usuario y propagan los errores de la base sin exponer datos de otras empresas.
+  - _Requirements: 1.1, 1.3, 3.4, 3.6, 5.4, 5.5_
+  - _Boundary: server/utils/events-repo_
+  - _Depends: 2.3_
+- [x] 3.4 Exponer los endpoints CRUD de eventos
+  - Endpoints para listar, obtener (con sus tiers), crear, actualizar y eliminar eventos; lectura exige sesión, escritura exige COMPANY_ADMIN/EVENT_MANAGER y la eliminación exige COMPANY_ADMIN; payload inválido devuelve 422 con campos y rol no permitido 403 sin efecto.
+  - Observable: crear/editar con datos válidos persiste y se refleja en el listado; un EVENT_MANAGER que intenta eliminar recibe 403; eliminar como COMPANY_ADMIN borra el evento y sus tiers.
+  - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 3.1, 3.3, 3.4, 3.5, 3.6, 7.1, 7.3, 7.4_
+  - _Boundary: server/api/events_
+  - _Depends: 3.2, 3.3_
+- [x] 3.5 Exponer la transición de estado del evento
+  - Endpoint que aplica una acción de estado (publicar/finalizar/cancelar) validando la transición server-side; publicar exige al menos un tier; transición no permitida o publicar sin tiers devuelve conflicto.
+  - Observable: publicar un evento en borrador con un tier lo deja publicado; publicar sin tiers o una transición inválida devuelve 409 y conserva el estado.
+  - _Requirements: 4.2, 4.3, 4.4, 4.5_
+  - _Boundary: server/api/events_
+  - _Depends: 3.1, 3.3_
+- [x] 3.6 Exponer los endpoints de etapas de boletería
+  - Endpoints para listar, crear, actualizar y eliminar tiers de un evento; lectura exige sesión, escritura exige COMPANY_ADMIN/EVENT_MANAGER, con validación de entrada y aislamiento por empresa heredado del evento.
+  - Observable: agregar/editar/eliminar tiers de un evento de la propia empresa persiste y se refleja; un payload inválido devuelve 422 y un rol no permitido 403.
+  - _Requirements: 2.1, 2.2, 2.3, 5.1, 5.4, 5.5, 5.6, 7.1, 7.3, 7.4_
+  - _Boundary: server/api/events_
+  - _Depends: 3.2, 3.3_
+
+- [x] 4. Capa de cliente: composables y navegación
+- [x] 4.1 (P) Implementar el composable de eventos
+  - Exponer listar, obtener, crear, actualizar, eliminar y cambiar de estado un evento, consumiendo los endpoints server vía `$fetch`.
+  - Observable: el composable lista los eventos de la empresa y refleja create/update/remove y cambios de estado tras la respuesta del servidor.
+  - _Requirements: 3.6, 4.2, 4.4_
+  - _Boundary: useEvents_
+  - _Depends: 3.4, 3.5_
+- [x] 4.2 (P) Implementar el composable de boletería
+  - Exponer listar, crear, actualizar y eliminar los tiers de un evento, consumiendo los endpoints server.
+  - Observable: el composable devuelve los tiers de un evento y refleja altas/ediciones/eliminaciones tras la respuesta del servidor.
+  - _Requirements: 5.4, 5.5_
+  - _Boundary: useTicketTiers_
+  - _Depends: 3.6_
+- [x] 4.3 Registrar la navegación y la protección por rol de la sección Eventos
+  - Añadir la entrada de navegación "Eventos" visible solo para SUPER_ADMIN/COMPANY_ADMIN/EVENT_MANAGER y declarar los roles requeridos en las rutas de gestión para la guarda de rol existente.
+  - Observable: GATE_STAFF no ve la entrada "Eventos" ni puede abrir sus rutas por URL; los roles de gestión sí.
+  - _Requirements: 2.3, 6.6_
+  - _Boundary: app.config, middleware role_
+  - _Depends: 1.1_
+
+- [x] 5. Pantallas de gestión
+- [x] 5.1 (P) Construir el listado de eventos
+  - Página que muestra los eventos de la empresa con nombre, fecha/hora, lugar y estado, y una acción de crear visible solo para los roles autorizados.
+  - Observable: un usuario autorizado ve el listado con los campos clave y el estado de cada evento, y accede a la creación si su rol lo permite.
+  - _Requirements: 3.6, 6.1, 6.2_
+  - _Boundary: pages/events, components/events_
+  - _Depends: 4.1, 4.3_
+- [x] 5.2 Construir la creación/edición de evento y las acciones de estado
+  - Formulario de crear/editar con validación de campos, estado de carga que evita envíos duplicados y acciones de transición de estado; la eliminación se oculta o deshabilita cuando el rol no la permite.
+  - Observable: enviar con campos vacíos/ inválidos muestra validación y no envía; guardar muestra progreso y persiste; un EVENT_MANAGER no ve la acción eliminar, un COMPANY_ADMIN sí.
+  - _Requirements: 6.2, 6.3, 6.4, 6.6_
+  - _Boundary: pages/events, components/events_
+  - _Depends: 4.1, 4.3_
+- [x] 5.3 Construir la configuración de boletería
+  - Página para agregar, editar y eliminar tiers de un evento (nombre, precio, moneda, cupo) con validación de campos y estado de carga; refleja los cambios tras guardarlos.
+  - Observable: un usuario autorizado configura múltiples tiers de un evento y los cambios aparecen tras guardarse; un envío inválido muestra validación.
+  - _Requirements: 5.5, 5.6, 6.3, 6.4, 6.5_
+  - _Boundary: pages/events, components/events_
+  - _Depends: 4.2, 4.3_
+
+- [x] 6. Integración: gestión de catálogo de extremo a extremo
+  - Conectar pantallas, composables, endpoints y RLS para que un usuario gestor cree un evento, configure su boletería, lo publique y lo administre, con aislamiento por empresa de extremo a extremo.
+  - Observable: un usuario gestor completa crear evento → configurar tier → publicar → ver en el listado con estado publicado, y un usuario de otra empresa no ve ese evento.
+  - _Requirements: 2.1, 3.1, 3.6, 4.2, 5.1, 6.1, 6.5_
+  - _Depends: 2.3, 3.4, 3.5, 3.6, 5.1, 5.2, 5.3_
+
+- [x] 7. Validación: pruebas
+- [x] 7.1 Pruebas unitarias de estado y validación
+  - Cubrir la matriz de transiciones de estado y la apertura al registro, y la validación de entrada de eventos y tiers (casos válidos e inválidos por campo).
+  - Observable: las pruebas pasan y demuestran transiciones permitidas/denegadas y errores de campo correctos.
+  - _Requirements: 3.2, 3.3, 4.1, 4.4, 4.5, 4.6, 5.2, 5.3_
+  - _Depends: 3.1, 3.2_
+- [x] 7.2 Pruebas de integración de aislamiento y autorización por rol
+  - Verificar con el harness de Postgres el aislamiento RLS entre empresas, el acceso transversal de SUPER_ADMIN, la escritura por rol (EVENT_MANAGER sin DELETE de evento, GATE_STAFF sin escritura) y la herencia de empresa del tier desde el evento.
+  - Observable: las pruebas confirman que no hay fuga entre empresas, que las escrituras respetan el rol y que el tier no puede vincularse a un evento de otra empresa.
+  - _Requirements: 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 2.1, 2.2, 2.3_
+  - _Depends: 6_
+- [x] 7.3* Pruebas E2E de gestión de eventos
+  - Cubrir crear evento → configurar tier → publicar (estado publicado), publicar sin tiers (conflicto visible) y la ausencia de la acción eliminar para EVENT_MANAGER.
+  - Observable: las rutas críticas pasan en un navegador real; los escenarios autenticados se omiten automáticamente si no hay credenciales de Supabase reales.
+  - _Requirements: 3.1, 4.2, 4.3, 5.1, 6.5, 6.6_
+  - _Depends: 6_
+
+## Implementation Notes
+- Tipado del cliente Supabase: se creó `app/types/database.types.ts` (formato `supabase gen types`) para tipar `events`/`ticket_tiers`/`companies`/`profiles`. Sin él, `Database = unknown` hacía que `.insert()/.update()` infirieran `never`. Mantener sincronizado con las migraciones. También elimina el warning del módulo `@nuxtjs/supabase`.
+- Auto-import de `server/utils`: la función del repo `createEvent` colisionaba con `createEvent` de h3 (auto-import). Se renombró a `insertEvent` para evitar el shadowing. Evitar nombres de utilidades server que coincidan con exports de h3 (`createEvent`, `getQuery`, etc.).
+- Herencia de empresa del tier (req. 1.6): `ticket_tiers.company_id` se sincroniza con el evento padre vía trigger `SECURITY INVOKER`. Efecto colateral deseado: referenciar un evento de otra empresa hace que el `SELECT` del trigger no vea la fila (RLS) y rechace el insert. Validado en `events_rls.test.sql` (E7/E8).
+- Validación local: `npm run typecheck` ✓, `npx vitest run` ✓ (40 tests), `bash supabase/tests/run.sh` ✓ (RLS foundation + event-management contra Postgres real), `npm run build` ✓.
+- 6 y 7.3 (RESUELTO): las migraciones 0006–0008 se aplicaron al Supabase remoto vía el SQL Editor del dashboard (el PAT del entorno estaba expirado, así que la Management API automática no era viable). Se creó un usuario de prueba COMPANY_ADMIN (`companyadmin@vitafelix.local`) en la empresa demo vía Auth Admin API + PostgREST con la service key, porque el único usuario semilla era SUPER_ADMIN (que por diseño no crea eventos: requiere rol de gestión con contexto de empresa). Los 3 E2E pasan contra Supabase real: ruta protegida redirige a login, crear→tier→publicar, y publicar sin tiers → conflicto.
+- Mensajes de error en server routes: usar el campo `message` de `createError` (no `statusMessage`) para texto legible con acentos; `$fetch` lo expone en `error.data.message`. `statusMessage` se sanea y pierde caracteres no ASCII. El status.patch (409) sigue este patrón.

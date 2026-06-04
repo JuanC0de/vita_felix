@@ -15,5 +15,5 @@ watch(
 </script>
 
 <template>
-  <p class="text-center text-sm text-slate-600">Confirmando tu sesión…</p>
+  <p class="text-center text-sm text-slate-400">Confirmando tu sesión…</p>
 </template>

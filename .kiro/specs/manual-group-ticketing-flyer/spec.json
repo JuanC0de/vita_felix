@@ -1,0 +1,22 @@
+{
+  "feature_name": "manual-group-ticketing-flyer",
+  "created_at": "2026-06-03T23:11:00Z",
+  "updated_at": "2026-06-03T23:11:00Z",
+  "language": "es",
+  "phase": "initialized",
+  "approvals": {
+    "requirements": {
+      "generated": true,
+      "approved": true
+    },
+    "design": {
+      "generated": true,
+      "approved": true
+    },
+    "tasks": {
+      "generated": true,
+      "approved": true
+    }
+  },
+  "ready_for_implementation": true
+}

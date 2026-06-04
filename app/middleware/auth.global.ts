@@ -4,10 +4,14 @@
  * - Con sesión en /login ⇒ redirige al Dashboard (req. 5.4).
  */
 const PUBLIC_ROUTES = ['/login', '/confirm']
+// Prefijos públicos sin sesión: registro de asistentes y vista de ticket
+// (ticketing-checkin, req. 1.5).
+const PUBLIC_PREFIXES = ['/e/', '/t/']
 
 export default defineNuxtRouteMiddleware((to) => {
   const user = useSupabaseUser()
-  const isPublic = PUBLIC_ROUTES.includes(to.path)
+  const isPublic =
+    PUBLIC_ROUTES.includes(to.path) || PUBLIC_PREFIXES.some((p) => to.path.startsWith(p))
 
   if (!user.value && !isPublic) {
     return navigateTo('/login')

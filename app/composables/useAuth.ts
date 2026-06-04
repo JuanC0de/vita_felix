@@ -37,5 +37,12 @@ export function useAuth() {
     await navigateTo('/login')
   }
 
-  return { user, authContext, signIn, signOut, refreshContext }
+  /** Cambia la empresa y el rol activos del usuario actual. */
+  async function switchCompany(companyId: string | null): Promise<void> {
+    await $fetch('/api/auth/switch-company', { method: 'POST', body: { companyId } })
+    await supabase.auth.refreshSession()
+    await refreshContext()
+  }
+
+  return { user, authContext, signIn, signOut, refreshContext, switchCompany }
 }

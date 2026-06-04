@@ -1,5 +1,6 @@
 import { serverSupabaseClient, serverSupabaseServiceRole } from '#supabase/server'
 import type { H3Event } from 'h3'
+import type { Database } from '~/types/database.types'
 
 /**
  * Cliente de Supabase con la identidad del usuario de la petición.
@@ -7,7 +8,7 @@ import type { H3Event } from 'h3'
  * Es el cliente por defecto para operaciones de datos en server routes.
  */
 export function userClient(event: H3Event) {
-  return serverSupabaseClient(event)
+  return serverSupabaseClient<Database>(event)
 }
 
 /**
@@ -19,5 +20,5 @@ export function userClient(event: H3Event) {
  * por lo que NUNCA llega al bundle del cliente. No reexportar hacia el cliente.
  */
 export function serviceRoleClient(event: H3Event) {
-  return serverSupabaseServiceRole(event)
+  return serverSupabaseServiceRole<Database>(event)
 }
