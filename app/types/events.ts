@@ -15,6 +15,17 @@ export const STATUS_ACTIONS = ['publish', 'finish', 'cancel'] as const
 
 export type StatusAction = (typeof STATUS_ACTIONS)[number]
 
+/** Configuración del diseño/tema visual de las boletas del evento. */
+export interface EventThemeConfig {
+  primaryColor?: string
+  secondaryColor?: string
+  accentColor?: string
+  gradientStart?: string
+  gradientEnd?: string
+  heroBackground?: string
+  logoUrl?: string | null
+}
+
 /** Evento musical perteneciente a una empresa. */
 export interface Event {
   id: string
@@ -26,6 +37,7 @@ export interface Event {
   status: EventStatus
   description: string | null
   flyerUrl: string | null
+  themeConfig: EventThemeConfig | null
   createdAt: string
   updatedAt: string
 }
@@ -53,6 +65,7 @@ export interface EventCreate {
   eventAt: string
   description?: string | null
   flyerUrl?: string | null
+  themeConfig?: EventThemeConfig | null
 }
 
 /** Payload para actualizar un evento (mismos campos editables que al crear). */
@@ -65,6 +78,7 @@ export interface EventWriteModel {
   eventAt: string
   description: string | null
   flyerUrl: string | null
+  themeConfig: EventThemeConfig | null
 }
 
 /** Payload para crear una etapa de boletería. */

@@ -1,9 +1,24 @@
 <script setup lang="ts">
 definePageMeta({ requiredRoles: ['SUPER_ADMIN'] })
 
-const { data: dashboard, pending, error } = await useAsyncData('dashboard:global', () => 
-  $fetch<any>('/api/dashboard')
+const { authContext } = useAuth()
+
+const tenantKey = computed(() => authContext.value?.companyId ?? 'global')
+
+const { data: dashboard, pending, error, refresh } = await useAsyncData(
+  'dashboard:admin',
+  () => $fetch<any>('/api/dashboard'),
 )
+
+watch(tenantKey, () => refresh())
+
+const { data: myCompanies } = await useAsyncData('auth:my-companies', () =>
+  $fetch<any[]>('/api/auth/my-companies').catch(() => []),
+)
+
+const currentCompany = computed(() => {
+  return myCompanies.value?.find((c: any) => c.id === authContext.value?.companyId)
+})
 
 function fmtMoney(amount: number): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(amount)
@@ -18,20 +33,46 @@ function formatDate(iso: string): string {
   <div class="space-y-6">
     <!-- AppPageHeader -->
     <AppPageHeader
-      title="Centro de control global"
-      subtitle="Supervisión analítica de la infraestructura SaaS, empresas, eventos y accesos."
+      :title="dashboard?.type === 'company' ? `Centro de control: ${currentCompany?.name || 'Organización'}` : 'Centro de control global'"
+      :subtitle="dashboard?.type === 'company' ? 'Analíticas operativas de la organización seleccionada.' : 'Supervisión analítica de la infraestructura SaaS, empresas, eventos y accesos.'"
     />
 
     <div v-if="pending" class="text-center py-12 text-slate-500">
-      Cargando analíticas globales...
+      Cargando analíticas...
     </div>
     <div v-else-if="error || !dashboard" class="text-center py-12 text-rose-600">
-      No se pudieron cargar las analíticas globales.
+      No se pudieron cargar las analíticas.
     </div>
 
     <div v-else class="space-y-6">
-      <!-- KPIs de primer nivel -->
-      <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <!-- KPIs de primer nivel para empresa -->
+      <div v-if="dashboard.type === 'company'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <AppStatCard
+          title="Eventos Activos"
+          :value="dashboard.kpis.activeEvents"
+          subtext="Eventos en venta/publicados"
+        />
+        <AppStatCard
+          title="Tickets Vendidos"
+          :value="dashboard.kpis.issuedTickets"
+          subtext="Total emisiones"
+        />
+        <AppStatCard
+          title="Ingresos Estimados"
+          :value="fmtMoney(dashboard.kpis.estimatedRevenue)"
+          subtext="Recaudación bruta"
+          trend="up"
+          trend-value="COP"
+        />
+        <AppStatCard
+          title="Ocupación Promedio"
+          :value="`${dashboard.kpis.averageOccupancy}%`"
+          subtext="Asistencia en puerta"
+        />
+      </div>
+
+      <!-- KPIs de primer nivel para global -->
+      <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <AppStatCard
           title="Empresas Activas"
           :value="dashboard.kpis.activeCompanies"
@@ -66,8 +107,8 @@ function formatDate(iso: string): string {
         />
       </div>
 
-      <!-- Sección de Alertas Operativas -->
-      <div v-if="dashboard.alerts && dashboard.alerts.length > 0" class="space-y-3">
+      <!-- Sección de Alertas Operativas (solo para Global) -->
+      <div v-if="dashboard.type === 'global' && dashboard.alerts && dashboard.alerts.length > 0" class="space-y-3">
         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">
           Alertas Operativas
         </h3>
@@ -86,10 +127,35 @@ function formatDate(iso: string): string {
         </div>
       </div>
 
-      <!-- Layout de Dos Columnas: Actividad Reciente y Gráficas de Referencia -->
+      <!-- Layout de Dos Columnas: Actividad Reciente / Próximo Evento y Control de Asistencia -->
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <!-- Actividad Reciente -->
-        <AppCard>
+        <!-- Próximo Evento (Empresa) -->
+        <AppCard v-if="dashboard.type === 'company'">
+          <template #header>
+            <h3 class="font-bold text-slate-900">Próximo evento programado</h3>
+          </template>
+          <div v-if="!dashboard.kpis.nextEvent" class="text-center py-8 text-sm text-slate-400">
+            No hay eventos futuros programados.
+          </div>
+          <div v-else class="space-y-4 py-2">
+            <div>
+              <h4 class="text-lg font-bold text-slate-900">{{ dashboard.kpis.nextEvent.name }}</h4>
+              <p class="text-xs text-slate-500 mt-0.5">Lugar: {{ dashboard.kpis.nextEvent.venue }}</p>
+            </div>
+            <div class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-600 flex justify-between">
+              <span>Fecha y hora:</span>
+              <span class="font-bold">{{ formatDate(dashboard.kpis.nextEvent.date) }}</span>
+            </div>
+            <div class="pt-2">
+              <NuxtLink :to="`/events`">
+                <AppButton size="sm" class="w-full">Gestionar eventos</AppButton>
+              </NuxtLink>
+            </div>
+          </div>
+        </AppCard>
+
+        <!-- Actividad Reciente (Global) -->
+        <AppCard v-else>
           <template #header>
             <h3 class="font-bold text-slate-900">Actividad reciente</h3>
           </template>
@@ -113,22 +179,33 @@ function formatDate(iso: string): string {
           </ul>
         </AppCard>
 
-        <!-- Distribución Visual Decorativa -->
+        <!-- Distribución Visual Decorativa / Asistencia -->
         <AppCard>
           <template #header>
-            <h3 class="font-bold text-slate-900">Operaciones de acceso</h3>
+            <h3 class="font-bold text-slate-900">
+              {{ dashboard.type === 'company' ? 'Control de asistencia en puerta' : 'Operaciones de acceso' }}
+            </h3>
           </template>
           <div class="space-y-4 py-3">
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold text-slate-700">
-                <span>Eficiencia del ingreso en puerta</span>
+                <span>
+                  {{ dashboard.type === 'company' ? 'Asistencia acumulada' : 'Eficiencia del ingreso en puerta' }}
+                </span>
                 <span>{{ dashboard.kpis.averageOccupancy }}%</span>
               </div>
               <AppProgressBar :value="dashboard.kpis.averageOccupancy" variant="primary" />
             </div>
             <div class="text-xs text-slate-500 leading-relaxed pt-2">
-              <p class="font-bold text-slate-700 mb-1">Métrica de Ocupación:</p>
-              Esta métrica representa el aforo ingresado de forma acumulada en todos los eventos gestionados. Una tasa ideal se sitúa entre el 70% y el 90%.
+              <p class="font-bold text-slate-700 mb-1">
+                {{ dashboard.type === 'company' ? 'Nota operativa:' : 'Métrica de Ocupación:' }}
+              </p>
+              <template v-if="dashboard.type === 'company'">
+                Este porcentaje compara el total de check-ins exitosos contra las entradas totales emitidas. Te ayuda a estimar los tiempos de ingreso en tus eventos.
+              </template>
+              <template v-else>
+                Esta métrica representa el aforo ingresado de forma acumulada en todos los eventos gestionados. Una tasa ideal se sitúa entre el 70% y el 90%.
+              </template>
             </div>
           </div>
         </AppCard>

@@ -1,8 +1,7 @@
 <script setup lang="ts">
 definePageMeta({ layout: 'auth' })
 
-const { signIn } = useAuth()
-const supabaseUser = useSupabaseUser()
+const { signIn, authContext } = useAuth()
 
 const email = ref('')
 const password = ref('')
@@ -10,9 +9,11 @@ const loading = ref(false)
 const fieldError = ref('')
 const errorMsg = ref('')
 
-watch(supabaseUser, (user) => {
-  if (user) navigateTo('/')
-})
+function homePathForRole(role: string | null | undefined): string {
+  if (role === 'SUPER_ADMIN') return '/admin/dashboard'
+  if (role === 'GATE_STAFF') return '/scan'
+  return '/'
+}
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -36,8 +37,10 @@ async function onSubmit() {
   loading.value = true
   try {
     await signIn(email.value.trim(), password.value)
+    await navigateTo(homePathForRole(authContext.value?.role))
   } catch {
     errorMsg.value = 'Credenciales incorrectas. Revisa e intenta otra vez.'
+  } finally {
     loading.value = false
   }
 }

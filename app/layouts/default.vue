@@ -19,10 +19,19 @@ async function onCompanySwitch(companyId: string) {
   const targetId = companyId === 'global' ? null : companyId
   try {
     await switchCompany(targetId)
-    await refreshContext()
     await refreshCompanies()
     isMobileOpen.value = false
-    await navigateTo('/')
+    // El tenant cambió en el JWT; limpiar caché para que la página destino
+    // recargue con el nuevo ámbito (evita datos globales/empresa mezclados).
+    clearNuxtData()
+    const role = authContext.value?.role
+    if (role === 'SUPER_ADMIN') {
+      await navigateTo('/admin/dashboard')
+    } else if (role === 'GATE_STAFF') {
+      await navigateTo('/scan')
+    } else {
+      await navigateTo('/')
+    }
   } catch (err) {
     console.error('Error al cambiar de empresa:', err)
   }

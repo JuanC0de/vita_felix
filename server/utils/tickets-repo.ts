@@ -27,6 +27,8 @@ interface PublicEventRow {
   status: string
   company_id: string
   flyer_url: string | null
+  theme_config: any | null
+  companies: { name: string } | null
 }
 
 /**
@@ -82,7 +84,7 @@ export async function registerAndIssue(
   // 1) Evento publicado + tier válido del evento.
   const { data: ev } = await db
     .from('events')
-    .select('id, name, venue, event_at, status, company_id, flyer_url')
+    .select('id, name, venue, event_at, status, company_id, flyer_url, theme_config, companies(name)')
     .eq('id', eventId)
     .maybeSingle()
   const eventRow = ev as unknown as PublicEventRow | null
@@ -157,6 +159,8 @@ export async function registerAndIssue(
     attendeeName: model.fullName,
     ticketId,
     flyerUrl: eventRow.flyer_url,
+    themeConfig: eventRow.theme_config,
+    organizerName: eventRow.companies ? eventRow.companies.name : null,
   })
   const pdfPath = `${ticketId}.pdf`
   const { error: upErr } = await db.storage

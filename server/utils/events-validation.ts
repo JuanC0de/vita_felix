@@ -52,6 +52,24 @@ export function validateEventInput(input: unknown): ValidationResult<EventWriteM
     errors.push({ field: 'flyerUrl', message: 'El enlace del flyer debe ser texto.' })
   }
 
+  let themeConfig: any = null
+  if (data.themeConfig !== undefined && data.themeConfig !== null) {
+    if (typeof data.themeConfig === 'object') {
+      const tc = data.themeConfig as Record<string, unknown>
+      themeConfig = {
+        primaryColor: typeof tc.primaryColor === 'string' ? tc.primaryColor.trim() : undefined,
+        secondaryColor: typeof tc.secondaryColor === 'string' ? tc.secondaryColor.trim() : undefined,
+        accentColor: typeof tc.accentColor === 'string' ? tc.accentColor.trim() : undefined,
+        gradientStart: typeof tc.gradientStart === 'string' ? tc.gradientStart.trim() : undefined,
+        gradientEnd: typeof tc.gradientEnd === 'string' ? tc.gradientEnd.trim() : undefined,
+        heroBackground: typeof tc.heroBackground === 'string' ? tc.heroBackground.trim() : undefined,
+        logoUrl: typeof tc.logoUrl === 'string' && tc.logoUrl.trim().length > 0 ? tc.logoUrl.trim() : null,
+      }
+    } else {
+      errors.push({ field: 'themeConfig', message: 'La configuración de tema debe ser un objeto.' })
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors }
 
   return {
@@ -62,6 +80,7 @@ export function validateEventInput(input: unknown): ValidationResult<EventWriteM
       eventAt: new Date(data.eventAt as string).toISOString(),
       description: isNonEmptyString(data.description) ? (data.description as string).trim() : null,
       flyerUrl: isNonEmptyString(data.flyerUrl) ? (data.flyerUrl as string).trim() : null,
+      themeConfig,
     },
   }
 }

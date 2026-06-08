@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   // 1) Obtener perfiles filtrados por empresa
   let query = db.from('profiles').select('*')
   
-  if (ctx.role === 'COMPANY_ADMIN') {
+  if (ctx.role === 'COMPANY_ADMIN' || (ctx.role === 'SUPER_ADMIN' && ctx.companyId)) {
     query = query.eq('company_id', ctx.companyId!)
   }
 

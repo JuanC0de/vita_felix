@@ -58,7 +58,7 @@ function onChange(e: Event) {
         ]"
         @change="onChange"
       >
-        <option value="" disabled selected>{{ placeholder }}</option>
+        <option value="" :disabled="required">{{ placeholder }}</option>
         <option
           v-for="opt in options"
           :key="opt.value"

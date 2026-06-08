@@ -7,8 +7,16 @@ definePageMeta({ requiredRoles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER'
 
 const { list } = useEvents()
 const { can } = useAuthorization()
+const { authContext } = useAuth()
 
-const { data: events, pending, error, refresh } = await useAsyncData('events:list', () => list())
+const tenantKey = computed(() => authContext.value?.companyId ?? 'global')
+
+const { data: events, pending, error, refresh } = await useAsyncData(
+  'events:list',
+  () => list(),
+)
+
+watch(tenantKey, () => refresh())
 
 const search = ref('')
 const statusFilter = ref('')

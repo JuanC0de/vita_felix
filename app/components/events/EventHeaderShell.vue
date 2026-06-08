@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Props {
   id: string
-  activeTab: 'resumen' | 'dashboard' | 'tickets' | 'attendees'
+  activeTab: 'resumen' | 'dashboard' | 'tickets' | 'attendees' | 'hosts'
   eventName: string
   eventStatus: string
 }
@@ -62,6 +62,18 @@ defineProps<Props>()
           ]"
         >
           🎟️ Boletería
+        </NuxtLink>
+
+        <NuxtLink
+          :to="`/events/${id}/hosts`"
+          class="border-b-2 py-3 px-1 text-sm font-bold tracking-tight transition-colors duration-150 whitespace-nowrap"
+          :class="[
+            activeTab === 'hosts'
+              ? 'border-slate-900 text-slate-900'
+              : 'border-transparent text-slate-400 hover:border-slate-300 hover:text-slate-600'
+          ]"
+        >
+          ✉️ Invitaciones
         </NuxtLink>
         
         <NuxtLink

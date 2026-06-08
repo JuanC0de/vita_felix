@@ -4,6 +4,7 @@ import { userClient } from './supabase'
 import type {
   Event,
   EventStatus,
+  EventThemeConfig,
   EventWithTiers,
   EventWriteModel,
   TicketTier,
@@ -27,6 +28,7 @@ interface EventRow {
   status: EventStatus
   description: string | null
   flyer_url: string | null
+  theme_config: EventThemeConfig | null
   created_at: string
   updated_at: string
 }
@@ -43,7 +45,7 @@ interface TierRow {
   updated_at: string
 }
 
-const EVENT_COLUMNS = 'id, company_id, name, venue, event_at, status, description, flyer_url, created_at, updated_at'
+const EVENT_COLUMNS = 'id, company_id, name, venue, event_at, status, description, flyer_url, theme_config, created_at, updated_at'
 const TIER_COLUMNS = 'id, event_id, company_id, name, price, currency, quota, created_at, updated_at'
 
 function mapEvent(row: EventRow): Event {
@@ -56,6 +58,7 @@ function mapEvent(row: EventRow): Event {
     status: row.status,
     description: row.description,
     flyerUrl: row.flyer_url,
+    themeConfig: row.theme_config,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -114,6 +117,7 @@ export async function insertEvent(
       event_at: model.eventAt,
       description: model.description,
       flyer_url: model.flyerUrl,
+      theme_config: model.themeConfig as any,
     })
     .select(EVENT_COLUMNS)
     .single()
@@ -135,6 +139,7 @@ export async function updateEvent(
       event_at: model.eventAt,
       description: model.description,
       flyer_url: model.flyerUrl,
+      theme_config: model.themeConfig as any,
     })
     .eq('id', id)
     .select(EVENT_COLUMNS)

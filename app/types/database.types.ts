@@ -131,6 +131,7 @@ export interface Database {
           status: EventStatusEnum
           description: string | null
           flyer_url: string | null
+          theme_config: Json | null
           created_at: string
           updated_at: string
         }
@@ -143,6 +144,7 @@ export interface Database {
           status?: EventStatusEnum
           description?: string | null
           flyer_url?: string | null
+          theme_config?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -155,6 +157,7 @@ export interface Database {
           status?: EventStatusEnum
           description?: string | null
           flyer_url?: string | null
+          theme_config?: Json | null
           created_at?: string
           updated_at?: string
         }

@@ -19,7 +19,8 @@ psql -d "$DB" -v ON_ERROR_STOP=1 -q -f "$HERE/_harness.sql"
 echo "→ Aplicando migraciones de esquema (0001–0004, 0006–0010, 0012, 0013; se omite 0005 seed y 0011 storage)"
 for f in 0001_init_tenancy 0002_rls_helpers 0003_rls_policies 0004_access_token_hook \
          0006_events 0007_ticket_tiers 0008_events_rls \
-         0009_ticketing 0010_ticketing_rls 0012_enterprise_multitenancy 0013_event_flyer; do
+         0009_ticketing 0010_ticketing_rls 0012_enterprise_multitenancy 0013_event_flyer \
+         0015_fix_super_admin_tenant_select; do
   psql -d "$DB" -v ON_ERROR_STOP=1 -q -f "$MIG/$f.sql"
 done
 

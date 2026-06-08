@@ -145,4 +145,17 @@ begin
 end $$;
 reset role;
 
+-- ── Test E10: SUPER_ADMIN con empresa B seleccionada solo ve eventos de empresa B ──
+set role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"99999999-9999-9999-9999-999999999999","app_metadata":{"company_id":"bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb","role":"SUPER_ADMIN"}}', false);
+do $$
+begin
+  if (select count(*) from public.events) <> 1 then
+    raise exception 'TEST E10 FALLO: SUPER_ADMIN con empresa B seleccionada debería ver 1 evento, vio %',
+      (select count(*) from public.events);
+  end if;
+end $$;
+reset role;
+
 select '✔ Todas las pruebas RLS de events/ticket_tiers pasaron' as resultado;

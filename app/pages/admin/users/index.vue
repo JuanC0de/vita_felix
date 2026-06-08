@@ -8,7 +8,14 @@ const { list: listCompanies } = useCompanies()
 const isSuperAdmin = computed(() => authContext.value?.role === 'SUPER_ADMIN')
 const currentCompanyId = computed(() => authContext.value?.companyId)
 
-const { data: users, pending: usersPending, error: usersError, refresh: refreshUsers } = await useAsyncData('users:list', () => listUsers())
+const tenantKey = computed(() => authContext.value?.companyId ?? 'global')
+
+const { data: users, pending: usersPending, error: usersError, refresh: refreshUsers } = await useAsyncData(
+  'users:list',
+  () => listUsers(),
+)
+
+watch(tenantKey, () => refreshUsers())
 const { data: companies } = await useAsyncData('companies:dropdown', () => isSuperAdmin.value ? listCompanies() : Promise.resolve([]))
 
 const search = ref('')

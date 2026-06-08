@@ -11,7 +11,7 @@ export default defineEventHandler(async (event) => {
   const ctx = await requireUser(event)
   const db = serviceRoleClient(event)
 
-  if (ctx.role === 'SUPER_ADMIN') {
+  if (ctx.role === 'SUPER_ADMIN' && !ctx.companyId) {
     // ─────────────────────────────────────────────────────────────────────────
     // DASHBOARD GLOBAL (SUPER_ADMIN)
     // ─────────────────────────────────────────────────────────────────────────
