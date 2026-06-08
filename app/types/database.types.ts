@@ -242,6 +242,7 @@ export interface Database {
           status: TicketStatusEnum
           used_at: string | null
           pdf_path: string | null
+          transfer_receipt_path: string | null
           created_at: string
         }
         Insert: {
@@ -253,6 +254,7 @@ export interface Database {
           status?: TicketStatusEnum
           used_at?: string | null
           pdf_path?: string | null
+          transfer_receipt_path?: string | null
           created_at?: string
         }
         Update: {
@@ -264,6 +266,7 @@ export interface Database {
           status?: TicketStatusEnum
           used_at?: string | null
           pdf_path?: string | null
+          transfer_receipt_path?: string | null
           created_at?: string
         }
         Relationships: []

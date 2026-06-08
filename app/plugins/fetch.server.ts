@@ -12,12 +12,12 @@ export default defineNuxtPlugin(() => {
       if (typeof request === 'string' && request.startsWith('/')) {
         const headers = options.headers || {}
         if (headers instanceof Headers) {
-          headers.set('cookie', cookie.cookie)
+          headers.set('cookie', cookie.cookie || '')
         } else if (Array.isArray(headers)) {
-          headers.push(['cookie', cookie.cookie])
+          headers.push(['cookie', cookie.cookie || ''])
         } else {
           options.headers = {
-            cookie: cookie.cookie,
+            cookie: cookie.cookie || '',
             ...headers,
           }
         }

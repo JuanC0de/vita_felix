@@ -126,6 +126,8 @@ const manualLoading = ref(false)
 const manualErrors = ref<Record<string, string>>({})
 const manualSuccessTicketId = ref('')
 const manualSuccessPdfUrl = ref('')
+const manualHasReceipt = ref(false)
+const manualReceiptFile = ref<File | null>(null)
 
 function openManualModal() {
   manualFullName.value = ''
@@ -135,6 +137,8 @@ function openManualModal() {
   manualErrors.value = {}
   manualSuccessTicketId.value = ''
   manualSuccessPdfUrl.value = ''
+  manualHasReceipt.value = false
+  manualReceiptFile.value = null
   showManualModal.value = true
 }
 
@@ -144,22 +148,48 @@ function validateManual(): boolean {
   if (!/^[0-9-]{5,20}$/.test(manualCedula.value.trim())) errs.cedula = 'Cédula inválida (5-20 dígitos).'
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(manualEmail.value.trim())) errs.email = 'Correo inválido.'
   if (!manualTierId.value) errs.tierId = 'Selecciona una etapa de entrada.'
+  if (manualHasReceipt.value && !manualReceiptFile.value) {
+    errs.receipt = 'El archivo de comprobante es obligatorio si se marca transferencia.'
+  }
   manualErrors.value = errs
   return Object.keys(errs).length === 0
+}
+
+function onReceiptFileChange(event: Event) {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files.length > 0) {
+    manualReceiptFile.value = target.files[0] || null
+  } else {
+    manualReceiptFile.value = null
+  }
 }
 
 async function onSubmitManual() {
   if (!validateManual()) return
   manualLoading.value = true
   try {
-    const res = await $fetch<any>(`/api/events/${id}/attendees`, {
-      method: 'POST',
-      body: {
+    let bodyData: any
+    
+    if (manualHasReceipt.value && manualReceiptFile.value) {
+      const formData = new FormData()
+      formData.append('fullName', manualFullName.value.trim())
+      formData.append('cedula', manualCedula.value.trim())
+      formData.append('email', manualEmail.value.trim())
+      formData.append('tierId', manualTierId.value)
+      formData.append('file', manualReceiptFile.value)
+      bodyData = formData
+    } else {
+      bodyData = {
         fullName: manualFullName.value.trim(),
         cedula: manualCedula.value.trim(),
         email: manualEmail.value.trim(),
         tierId: manualTierId.value,
       }
+    }
+
+    const res = await $fetch<any>(`/api/events/${id}/attendees`, {
+      method: 'POST',
+      body: bodyData,
     })
     manualSuccessTicketId.value = res.ticketId
     manualSuccessPdfUrl.value = res.pdfUrl
@@ -179,6 +209,10 @@ function copyWhatsAppMessage() {
   }).catch(() => {
     alert('No se pudo copiar de forma automática. Selecciona y copia el texto del enlace.')
   })
+}
+
+function openReceipt(ticketId: string) {
+  window.open(`/api/tickets/${ticketId}/receipt`, '_blank')
 }
 </script>
 
@@ -302,6 +336,14 @@ function copyWhatsAppMessage() {
         <td class="px-6 py-4 text-right">
           <div class="flex justify-end gap-2">
             <AppButton
+              v-if="att.ticket?.id && att.ticket.transferReceiptPath"
+              variant="outline"
+              size="sm"
+              @click="openReceipt(att.ticket.id)"
+            >
+              💰 Recibo
+            </AppButton>
+            <AppButton
               v-if="att.ticket?.id"
               variant="outline"
               size="sm"
@@ -422,6 +464,32 @@ function copyWhatsAppMessage() {
               </option>
             </select>
             <p v-if="manualErrors.tierId" class="mt-1 text-xs text-rose-600 font-medium">{{ manualErrors.tierId }}</p>
+          </div>
+
+          <div class="flex items-center gap-2 pt-2">
+            <input
+              id="manual-hasReceipt"
+              v-model="manualHasReceipt"
+              type="checkbox"
+              class="h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 cursor-pointer"
+            />
+            <label for="manual-hasReceipt" class="text-sm font-semibold text-slate-700 cursor-pointer select-none">
+              Comprobante transferencia
+            </label>
+          </div>
+
+          <div v-if="manualHasReceipt" class="space-y-1 pt-1">
+            <label class="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-1" for="manual-receipt">
+              Archivo de comprobante (JPG, PNG, WEBP, PDF - Máx. 5MB)
+            </label>
+            <input
+              id="manual-receipt"
+              type="file"
+              accept="image/jpeg,image/png,image/webp,application/pdf"
+              class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none bg-white file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-100 file:text-slate-700 hover:file:bg-slate-200 file:cursor-pointer"
+              @change="onReceiptFileChange"
+            />
+            <p v-if="manualErrors.receipt" class="mt-1 text-xs text-rose-600 font-medium">{{ manualErrors.receipt }}</p>
           </div>
 
           <div class="flex justify-end gap-2 pt-4 border-t border-slate-100 mt-4">

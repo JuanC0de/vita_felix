@@ -1,4 +1,4 @@
-import { createError, getRouterParam, readBody } from 'h3'
+import { createError, getRouterParam, readBody, readMultipartFormData, getHeader } from 'h3'
 import { requireRole } from '../../../utils/auth'
 import { registerAndIssue } from '../../../utils/tickets-repo'
 import { validateRegistrationInput } from '../../../utils/ticketing-validation'
@@ -18,7 +18,29 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 400, statusMessage: 'Falta el identificador de evento' })
   }
 
-  const body = await readBody(event)
+  const contentType = getHeader(event, 'content-type') || ''
+  let body: any = {}
+  let receiptFile: { data: Buffer; filename: string; type: string } | null = null
+
+  if (contentType.includes('multipart/form-data')) {
+    const parts = await readMultipartFormData(event)
+    if (parts) {
+      for (const part of parts) {
+        if (part.name === 'file' && part.filename) {
+          receiptFile = {
+            data: part.data,
+            filename: part.filename,
+            type: part.type || 'application/octet-stream'
+          }
+        } else if (part.name) {
+          body[part.name] = part.data.toString('utf-8')
+        }
+      }
+    }
+  } else {
+    body = await readBody(event)
+  }
+
   const result = validateRegistrationInput(body)
   
   if (!result.ok) {
@@ -53,7 +75,7 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const res = await registerAndIssue(event, id, result.value)
+    const res = await registerAndIssue(event, id, result.value, receiptFile)
     return { ok: true, ...res }
   } finally {
     // 3) Restaurar estado original si fue modificado temporalmente

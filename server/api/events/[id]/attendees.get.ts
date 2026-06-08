@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
       // Buscar ticket del asistente
       const { data: ticket } = await (db as any)
         .from('tickets')
-        .select('id, status, used_at, ticket_tiers(name)')
+        .select('id, status, used_at, transfer_receipt_path, ticket_tiers(name)')
         .eq('attendee_id', att.id)
         .maybeSingle()
 
@@ -74,6 +74,7 @@ export default defineEventHandler(async (event) => {
           status: ticket.status,
           usedAt: ticket.used_at,
           tierName: ticket.ticket_tiers?.name || 'Desconocido',
+          transferReceiptPath: ticket.transfer_receipt_path || null,
         } : null
       }
     })

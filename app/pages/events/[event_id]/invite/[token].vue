@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { InvitationStatus } from '~/types/invitations'
 
-definePageMeta({ layout: 'public' })
+definePageMeta({
+  layout: 'public',
+  public: true,
+})
 
 const route = useRoute()
 const eventId = route.params.event_id as string

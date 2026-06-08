@@ -11,7 +11,9 @@ const PUBLIC_PREFIXES = ['/e/', '/t/']
 export default defineNuxtRouteMiddleware((to) => {
   const user = useSupabaseUser()
   const isPublic =
-    PUBLIC_ROUTES.includes(to.path) || PUBLIC_PREFIXES.some((p) => to.path.startsWith(p))
+    to.meta.public === true ||
+    PUBLIC_ROUTES.includes(to.path) ||
+    PUBLIC_PREFIXES.some((p) => to.path.startsWith(p))
 
   if (!user.value && !isPublic) {
     return navigateTo('/login')

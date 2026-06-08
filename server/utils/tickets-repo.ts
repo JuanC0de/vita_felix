@@ -77,6 +77,7 @@ export async function registerAndIssue(
   event: H3Event,
   eventId: string,
   model: RegistrationModel,
+  receiptFile?: { data: Buffer; filename: string; type: string } | null,
 ): Promise<RegistrationResult> {
   const db = serviceRoleClient(event)
   const { qrSecret, encKey, graceHours } = getTicketingSecrets()
@@ -170,8 +171,46 @@ export async function registerAndIssue(
 
   await db.from('tickets').update({ pdf_path: pdfPath }).eq('id', ticketId)
 
+  // 7) Procesar y subir comprobante de transferencia si se suministra.
+  if (receiptFile) {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'application/pdf']
+    if (!allowedTypes.includes(receiptFile.type)) {
+      fail('Formato de comprobante inválido. Solo se admiten archivos JPG, PNG, WEBP o PDF.', 422)
+    }
+
+    const maxBytes = 5 * 1024 * 1024
+    if (receiptFile.data.length > maxBytes) {
+      fail('El comprobante excede el tamaño límite permitido de 5 MB.', 422)
+    }
+
+    const extension = receiptFile.filename.split('.').pop() ?? 'jpg'
+    const receiptPath = `receipts/${ticketId}.${extension}`
+
+    const { error: rcErr } = await db.storage
+      .from(BUCKET)
+      .upload(receiptPath, receiptFile.data, { contentType: receiptFile.type, upsert: true })
+
+    if (rcErr) fail('No se pudo almacenar el comprobante de transferencia')
+
+    await db.from('tickets').update({ transfer_receipt_path: receiptPath }).eq('id', ticketId)
+  }
+
   const { data: signed } = await db.storage.from(BUCKET).createSignedUrl(pdfPath, SIGNED_URL_TTL)
   return { ticketId, pdfUrl: signed?.signedUrl ?? '' }
+}
+
+/** Devuelve una URL firmada fresca del comprobante de transferencia. */
+export async function getTicketReceiptUrl(event: H3Event, ticketId: string): Promise<string | null> {
+  const db = serviceRoleClient(event)
+  const { data: ticket } = await db
+    .from('tickets')
+    .select('transfer_receipt_path')
+    .eq('id', ticketId)
+    .maybeSingle()
+  const path = (ticket as unknown as { transfer_receipt_path: string | null } | null)?.transfer_receipt_path
+  if (!path) return null
+  const { data: signed } = await db.storage.from(BUCKET).createSignedUrl(path, SIGNED_URL_TTL)
+  return signed?.signedUrl ?? null
 }
 
 /** Devuelve una URL firmada fresca del PDF de un ticket (req. 4.2). */
