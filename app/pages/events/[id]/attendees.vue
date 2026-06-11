@@ -70,18 +70,8 @@ async function onConfirmVoid() {
 }
 
 // Obtener URL del PDF
-async function openPdf(ticketId: string) {
-  try {
-    const data = await $fetch<{ pdfUrl: string } | string>(`/api/tickets/${ticketId}/pdf`)
-    const url = typeof data === 'string' ? data : data?.pdfUrl
-    if (url) {
-      window.open(url, '_blank')
-    } else {
-      alert('No se pudo obtener el PDF del ticket.')
-    }
-  } catch (err) {
-    alert('Error al descargar el PDF del ticket.')
-  }
+function openPdf(ticketId: string) {
+  window.open(`/api/tickets/${ticketId}/pdf`, '_blank')
 }
 
 // Exportar CSV

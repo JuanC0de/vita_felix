@@ -49,12 +49,28 @@ export default defineEventHandler(async (event) => {
   // 3) Enriquecer con datos del ticket
   const enriched = await Promise.all(
     attendees.map(async (att) => {
-      // Buscar ticket del asistente
-      const { data: ticket } = await (db as any)
+      // Consulta base de ticket (campos que siempre existen)
+      const { data: ticket, error: ticketErr } = await (db as any)
         .from('tickets')
-        .select('id, status, used_at, transfer_receipt_path, ticket_tiers(name)')
+        .select('id, status, used_at, ticket_tiers(name)')
         .eq('attendee_id', att.id)
         .maybeSingle()
+
+      // Si la consulta base falla, se registra pero no se rompe la lista
+      if (ticketErr) {
+        console.error(`[attendees] Error al obtener ticket de attendee ${att.id}:`, ticketErr.message)
+      }
+
+      // Intentar obtener transfer_receipt_path de forma independiente
+      let transferReceiptPath: string | null = null
+      if (ticket?.id) {
+        const { data: receiptData } = await (db as any)
+          .from('tickets')
+          .select('transfer_receipt_path')
+          .eq('id', ticket.id)
+          .maybeSingle()
+        transferReceiptPath = receiptData?.transfer_receipt_path || null
+      }
 
       let cedula = ''
       try {
@@ -74,7 +90,7 @@ export default defineEventHandler(async (event) => {
           status: ticket.status,
           usedAt: ticket.used_at,
           tierName: ticket.ticket_tiers?.name || 'Desconocido',
-          transferReceiptPath: ticket.transfer_receipt_path || null,
+          transferReceiptPath,
         } : null
       }
     })
