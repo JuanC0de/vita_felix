@@ -74,6 +74,28 @@ async function onDelete(tierId: string) {
     loading.value = false
   }
 }
+
+const copied = ref(false)
+
+function getRegisterUrl(): string {
+  if (import.meta.client) {
+    return `${window.location.origin}/e/${id}/register`
+  }
+  return `/e/${id}/register`
+}
+
+async function copyRegisterUrl() {
+  const url = getRegisterUrl()
+  try {
+    await navigator.clipboard.writeText(url)
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+    }, 2000)
+  } catch (err) {
+    // Silencioso ante errores
+  }
+}
 </script>
 
 <template>
@@ -88,6 +110,36 @@ async function onDelete(tierId: string) {
       <p v-if="error" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 font-medium">
         {{ error }}
       </p>
+
+      <!-- Enlace Público de Venta -->
+      <AppCard>
+        <template #header>
+          <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-500">
+            Enlace de venta público
+          </h2>
+        </template>
+
+        <div class="space-y-3">
+          <p class="text-xs text-slate-500">
+            Comparte este enlace con tu público para que puedan registrarse y adquirir sus entradas al evento de forma directa.
+          </p>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-100 gap-2">
+            <div class="truncate text-xs font-mono text-slate-600 select-all pr-2 max-w-md">
+              {{ getRegisterUrl() }}
+            </div>
+            <AppButton
+              size="sm"
+              :variant="copied ? 'primary' : 'secondary'"
+              class="shrink-0 self-end sm:self-auto min-w-[110px]"
+              @click="copyRegisterUrl"
+            >
+              <span v-if="copied">✓ ¡Copiado!</span>
+              <span v-else>Copiar Enlace</span>
+            </AppButton>
+          </div>
+        </div>
+      </AppCard>
 
       <AppCard>
         <template #header>
