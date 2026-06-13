@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.9",
+    "nodemailer": "^8.0.11",
     "nuxt": "^4.4.7",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4"
@@ -21,6 +22,7 @@
   "devDependencies": {
     "@playwright/test": "^1.60.0",
     "@tailwindcss/vite": "^4.3.0",
+    "@types/nodemailer": "^8.0.1",
     "@types/qrcode": "^1.5.6",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",

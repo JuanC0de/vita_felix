@@ -49,6 +49,7 @@ export default defineEventHandler(async (event) => {
     .from('tickets')
     .select('*', { count: 'exact', head: true })
     .eq('event_id', id)
+    .neq('status', 'void')
 
   const { count: ticketsUsed } = await db
     .from('tickets')
@@ -65,6 +66,7 @@ export default defineEventHandler(async (event) => {
     .from('tickets')
     .select('ticket_tiers(price)')
     .eq('event_id', id)
+    .neq('status', 'void')
 
   const estimatedRevenue = (ticketSales ?? []).reduce((acc: number, t: any) => {
     const price = t.ticket_tiers?.price ? Number(t.ticket_tiers.price) : 0
@@ -83,6 +85,7 @@ export default defineEventHandler(async (event) => {
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('tier_id', t.id)
+        .neq('status', 'void')
       
       const soldCount = sold || 0
       return {

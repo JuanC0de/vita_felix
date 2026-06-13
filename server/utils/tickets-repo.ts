@@ -5,6 +5,7 @@ import { signToken } from './qr-token'
 import { encryptCedula, hashCedula } from './attendee-crypto'
 import { generateTicketPdf } from './ticket-pdf'
 import { getTicketingSecrets } from './ticketing-config'
+import { sendEmail } from './email'
 import type {
   CheckinResult,
   PublicEvent,
@@ -193,6 +194,51 @@ export async function registerAndIssue(
     if (rcErr) fail('No se pudo almacenar el comprobante de transferencia')
 
     await db.from('tickets').update({ transfer_receipt_path: receiptPath }).eq('id', ticketId)
+  }
+
+  // Enviar correo electrónico automático con el ticket PDF
+  try {
+    const formattedDate = new Date(eventRow.event_at).toLocaleDateString('es-CO', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    await sendEmail({
+      to: model.email,
+      subject: `Tu entrada para ${eventRow.name}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #4f46e5; margin-bottom: 20px;">¡Hola ${model.fullName}!</h2>
+          <p>Tu entrada para el evento <strong>${eventRow.name}</strong> ha sido generada exitosamente.</p>
+          
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f1f5f9;">
+            <p style="margin: 5px 0;"><strong>Evento:</strong> ${eventRow.name}</p>
+            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${formattedDate}</p>
+            <p style="margin: 5px 0;"><strong>Lugar:</strong> ${eventRow.venue}</p>
+            <p style="margin: 5px 0;"><strong>Tipo de Entrada:</strong> ${tierRow.name}</p>
+          </div>
+
+          <p>Adjunto a este correo encontrarás tu ticket de ingreso en formato PDF con el código QR de acceso.</p>
+          <p>Por favor, asegúrate de presentarlo en la entrada del evento.</p>
+          
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #64748b; text-align: center;">Este es un correo automático de confirmación de Vita Felix.</p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `ticket_${ticketId.substring(0, 8)}.pdf`,
+          content: Buffer.from(pdfBytes),
+          contentType: 'application/pdf'
+        }
+      ]
+    })
+  } catch (emailErr) {
+    console.error('Error al intentar enviar el correo automático:', emailErr)
   }
 
   const { data: signed } = await db.storage.from(BUCKET).createSignedUrl(pdfPath, SIGNED_URL_TTL)

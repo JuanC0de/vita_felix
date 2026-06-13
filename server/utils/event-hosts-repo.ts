@@ -5,6 +5,7 @@ import { encryptCedula, hashCedula } from './attendee-crypto'
 import { getTicketingSecrets } from './ticketing-config'
 import { signToken } from './qr-token'
 import { generateTicketPdf } from './ticket-pdf'
+import { sendEmail } from './email'
 import type {
   EventHost,
   EventHostCreate,
@@ -284,6 +285,53 @@ export async function registerGuestInvitation(
 
   // 7) Guardar la ruta en la base de datos
   await db.from('tickets').update({ pdf_path: pdfPath }).eq('id', ticketId)
+
+  // Enviar correo electrónico de cortesía automático
+  try {
+    const formattedDate = new Date(eventRow.event_at).toLocaleDateString('es-CO', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
+    const hostGreeting = hostName ? ` de parte de <strong>${hostName}</strong>` : ''
+
+    await sendEmail({
+      to: model.email,
+      subject: `Tu cortesía especial para ${eventRow.name}`,
+      html: `
+        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <h2 style="color: #6d28d9; margin-bottom: 20px;">¡Hola ${model.fullName}!</h2>
+          <p>Has recibido una invitación de cortesía especial${hostGreeting} para asistir al evento <strong>${eventRow.name}</strong>.</p>
+          
+          <div style="background-color: #faf5ff; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f3e8ff;">
+            <p style="margin: 5px 0;"><strong>Evento:</strong> ${eventRow.name}</p>
+            <p style="margin: 5px 0;"><strong>Fecha:</strong> ${formattedDate}</p>
+            <p style="margin: 5px 0;"><strong>Lugar:</strong> ${eventRow.venue}</p>
+            <p style="margin: 5px 0;"><strong>Tipo de Entrada:</strong> ${tierName}</p>
+          </div>
+
+          <p>Adjunto a este correo encontrarás tu ticket especial de cortesía en formato PDF con el código QR de acceso.</p>
+          <p>Por favor, asegúrate de presentarlo en la entrada del evento.</p>
+          
+          <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+          <p style="font-size: 12px; color: #64748b; text-align: center;">Este es un correo automático de confirmación de Vita Felix.</p>
+        </div>
+      `,
+      attachments: [
+        {
+          filename: `cortesia_${(ticketId as string).substring(0, 8)}.pdf`,
+          content: Buffer.from(pdfBytes),
+          contentType: 'application/pdf'
+        }
+      ]
+    })
+  } catch (emailErr) {
+    console.error('Error al intentar enviar el correo automático de cortesía:', emailErr)
+  }
 
   // 8) Crear enlace firmado para retorno
   const { data: signed } = await db.storage.from(BUCKET).createSignedUrl(pdfPath, SIGNED_URL_TTL)

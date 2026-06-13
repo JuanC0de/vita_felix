@@ -1,7 +1,7 @@
 <script setup lang="ts">
 interface Props {
   type?: 'button' | 'submit' | 'reset'
-  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost'
+  variant?: 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost' | 'warning'
   size?: 'sm' | 'md' | 'lg'
   disabled?: boolean
   loading?: boolean
@@ -27,6 +27,7 @@ withDefaults(defineProps<Props>(), {
       variant === 'secondary' && 'bg-slate-100 text-slate-900 hover:bg-slate-200 focus:ring-slate-300',
       variant === 'outline' && 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 focus:ring-slate-500 shadow-xs',
       variant === 'danger' && 'bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 shadow-sm',
+      variant === 'warning' && 'bg-amber-500 text-white hover:bg-amber-600 focus:ring-amber-500 shadow-sm',
       variant === 'ghost' && 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 focus:ring-slate-200',
       
       // Tamaños

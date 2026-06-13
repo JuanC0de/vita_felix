@@ -69,6 +69,69 @@ async function onConfirmVoid() {
   }
 }
 
+// Variables para reenvío manual de correo
+const emailLoading = ref(false)
+const sendingEmailTicketId = ref('')
+
+async function onSendEmail(ticketId: string) {
+  sendingEmailTicketId.value = ticketId
+  emailLoading.value = true
+  try {
+    await $fetch(`/api/tickets/${ticketId}/send-email`, { method: 'POST' })
+    alert('El ticket ha sido reenviado por correo electrónico exitosamente.')
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'No se pudo enviar el correo del ticket.')
+  } finally {
+    emailLoading.value = false
+    sendingEmailTicketId.value = ''
+  }
+}
+
+// Variables para eliminación permanente de ticket
+const showConfirmDelete = ref(false)
+const deleteLoading = ref(false)
+
+function openDeleteModal(att: any) {
+  if (!att.ticket?.id) return
+  selectedTicketId.value = att.ticket.id
+  selectedAttendeeName.value = att.fullName
+  showConfirmDelete.value = true
+}
+
+async function onConfirmDelete() {
+  deleteLoading.value = true
+  try {
+    await $fetch(`/api/tickets/${selectedTicketId.value}/delete`, { method: 'POST' })
+    showConfirmDelete.value = false
+    await refresh()
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'No se pudo eliminar el asistente y su ticket.')
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
+// Variables para envío masivo de correos
+const showConfirmBulkEmail = ref(false)
+const bulkEmailLoading = ref(false)
+
+function openBulkEmailModal() {
+  showConfirmBulkEmail.value = true
+}
+
+async function onConfirmBulkEmail() {
+  bulkEmailLoading.value = true
+  try {
+    const res = await $fetch<any>(`/api/events/${id}/send-emails`, { method: 'POST' })
+    showConfirmBulkEmail.value = false
+    alert(`Se enviaron exitosamente ${res.count} correos. Fallidos: ${res.failed}.`)
+  } catch (err: any) {
+    alert(err.data?.statusMessage || 'No se pudo realizar el envío masivo de correos.')
+  } finally {
+    bulkEmailLoading.value = false
+  }
+}
+
 // Obtener URL del PDF
 function openPdf(ticketId: string) {
   window.open(`/api/tickets/${ticketId}/pdf`, '_blank')
@@ -223,6 +286,9 @@ function openReceipt(ticketId: string) {
           <AppButton variant="outline" size="md" @click="exportCSV">
             📥 Exportar CSV
           </AppButton>
+          <AppButton variant="outline" size="md" :loading="bulkEmailLoading" @click="openBulkEmailModal">
+            ✉️ Envío Masivo
+          </AppButton>
           <AppButton size="md" @click="openManualModal">
             ➕ Registrar Asistente
           </AppButton>
@@ -334,6 +400,15 @@ function openReceipt(ticketId: string) {
               💰 Recibo
             </AppButton>
             <AppButton
+              v-if="att.ticket?.id && att.ticket.status !== 'void'"
+              variant="outline"
+              size="sm"
+              :loading="emailLoading && sendingEmailTicketId === att.ticket.id"
+              @click="onSendEmail(att.ticket.id)"
+            >
+              ✉️ Enviar
+            </AppButton>
+            <AppButton
               v-if="att.ticket?.id"
               variant="outline"
               size="sm"
@@ -343,11 +418,19 @@ function openReceipt(ticketId: string) {
             </AppButton>
             <AppButton
               v-if="att.ticket?.id && att.ticket.status !== 'void'"
-              variant="danger"
+              variant="warning"
               size="sm"
               @click="openVoidModal(att)"
             >
               Anular
+            </AppButton>
+            <AppButton
+              v-if="att.ticket?.id"
+              variant="danger"
+              size="sm"
+              @click="openDeleteModal(att)"
+            >
+              Eliminar
             </AppButton>
           </div>
         </td>
@@ -364,6 +447,30 @@ function openReceipt(ticketId: string) {
       :loading="voidLoading"
       @confirm="onConfirmVoid"
       @cancel="showConfirmVoid = false"
+    />
+
+    <!-- Modal de confirmación para eliminación de ticket -->
+    <AppConfirmModal
+      :show="showConfirmDelete"
+      title="Eliminar ticket y asistente"
+      :message="`¿Estás seguro de que deseas eliminar permanentemente el ticket y los datos de ${selectedAttendeeName}? Esta acción borrará el registro de la base de datos, eliminará sus archivos de almacenamiento y liberará su número de cédula. No se puede deshacer.`"
+      confirm-text="Eliminar permanentemente"
+      variant="danger"
+      :loading="deleteLoading"
+      @confirm="onConfirmDelete"
+      @cancel="showConfirmDelete = false"
+    />
+
+    <!-- Modal de confirmación para envío masivo de correos -->
+    <AppConfirmModal
+      :show="showConfirmBulkEmail"
+      title="Enviar entradas de forma masiva"
+      :message="`¿Estás seguro de que deseas enviar las entradas por correo electrónico a todos los asistentes activos registrados para este evento?`"
+      confirm-text="Sí, enviar a todos"
+      variant="primary"
+      :loading="bulkEmailLoading"
+      @confirm="onConfirmBulkEmail"
+      @cancel="showConfirmBulkEmail = false"
     />
 
     <!-- Modal de registro manual de asistente -->
