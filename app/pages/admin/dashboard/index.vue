@@ -25,7 +25,8 @@ function fmtMoney(amount: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('es-CO', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
 }
 </script>
 
@@ -40,33 +41,33 @@ function formatDate(iso: string): string {
     <div v-if="pending" class="text-center py-12 text-slate-500">
       Cargando analíticas...
     </div>
-    <div v-else-if="error || !dashboard" class="text-center py-12 text-rose-600">
-      No se pudieron cargar las analíticas.
+    <div v-else-if="error || !dashboard || dashboard.error" class="text-center py-12 text-rose-600">
+      {{ dashboard?.error || 'No se pudieron cargar las analíticas.' }}
     </div>
 
     <div v-else class="space-y-6">
       <!-- KPIs de primer nivel para empresa -->
-      <div v-if="dashboard.type === 'company'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <div v-if="dashboard?.type === 'company'" class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <AppStatCard
           title="Eventos Activos"
-          :value="dashboard.kpis.activeEvents"
+          :value="dashboard?.kpis?.activeEvents"
           subtext="Eventos en venta/publicados"
         />
         <AppStatCard
           title="Tickets Vendidos"
-          :value="dashboard.kpis.issuedTickets"
+          :value="dashboard?.kpis?.issuedTickets"
           subtext="Total emisiones"
         />
         <AppStatCard
           title="Ingresos Estimados"
-          :value="fmtMoney(dashboard.kpis.estimatedRevenue)"
+          :value="fmtMoney(dashboard?.kpis?.estimatedRevenue ?? 0)"
           subtext="Recaudación bruta"
           trend="up"
           trend-value="COP"
         />
         <AppStatCard
           title="Ocupación Promedio"
-          :value="`${dashboard.kpis.averageOccupancy}%`"
+          :value="`${dashboard?.kpis?.averageOccupancy ?? 0}%`"
           subtext="Asistencia en puerta"
         />
       </div>
@@ -75,46 +76,46 @@ function formatDate(iso: string): string {
       <div v-else class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <AppStatCard
           title="Empresas Activas"
-          :value="dashboard.kpis.activeCompanies"
+          :value="dashboard?.kpis?.activeCompanies"
           subtext="Empresas con membresía activa"
         />
         <AppStatCard
           title="Eventos Publicados"
-          :value="dashboard.kpis.publishedEvents"
+          :value="dashboard?.kpis?.publishedEvents"
           subtext="Disponibles para registro"
         />
         <AppStatCard
           title="Ingresos Estimados"
-          :value="fmtMoney(dashboard.kpis.estimatedRevenue)"
+          :value="fmtMoney(dashboard?.kpis?.estimatedRevenue ?? 0)"
           subtext="Facturación estimada del mes"
           trend="up"
           trend-value="COP"
         />
         <AppStatCard
           title="Tickets Emitidos"
-          :value="dashboard.kpis.issuedTickets"
+          :value="dashboard?.kpis?.issuedTickets"
           subtext="Total boletas generadas"
         />
         <AppStatCard
           title="Tickets Validados"
-          :value="dashboard.kpis.validatedTickets"
+          :value="dashboard?.kpis?.validatedTickets"
           subtext="Ingresaron a eventos"
         />
         <AppStatCard
           title="Ocupación Promedio"
-          :value="`${dashboard.kpis.averageOccupancy}%`"
+          :value="`${dashboard?.kpis?.averageOccupancy ?? 0}%`"
           subtext="Tasa de asistencia general"
         />
       </div>
 
       <!-- Sección de Alertas Operativas (solo para Global) -->
-      <div v-if="dashboard.type === 'global' && dashboard.alerts && dashboard.alerts.length > 0" class="space-y-3">
+      <div v-if="dashboard?.type === 'global' && dashboard?.alerts?.length" class="space-y-3">
         <h3 class="text-sm font-bold uppercase tracking-wider text-slate-500">
           Alertas Operativas
         </h3>
         <div class="grid grid-cols-1 gap-3">
           <div
-            v-for="(al, idx) in dashboard.alerts"
+            v-for="(al, idx) in dashboard?.alerts"
             :key="idx"
             class="rounded-xl border p-4 text-xs font-semibold flex items-center gap-3 shadow-xs"
             :class="[
@@ -130,21 +131,21 @@ function formatDate(iso: string): string {
       <!-- Layout de Dos Columnas: Actividad Reciente / Próximo Evento y Control de Asistencia -->
       <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <!-- Próximo Evento (Empresa) -->
-        <AppCard v-if="dashboard.type === 'company'">
+        <AppCard v-if="dashboard?.type === 'company'">
           <template #header>
             <h3 class="font-bold text-slate-900">Próximo evento programado</h3>
           </template>
-          <div v-if="!dashboard.kpis.nextEvent" class="text-center py-8 text-sm text-slate-400">
+          <div v-if="!dashboard?.kpis?.nextEvent" class="text-center py-8 text-sm text-slate-400">
             No hay eventos futuros programados.
           </div>
           <div v-else class="space-y-4 py-2">
             <div>
-              <h4 class="text-lg font-bold text-slate-900">{{ dashboard.kpis.nextEvent.name }}</h4>
-              <p class="text-xs text-slate-500 mt-0.5">Lugar: {{ dashboard.kpis.nextEvent.venue }}</p>
+              <h4 class="text-lg font-bold text-slate-900">{{ dashboard?.kpis?.nextEvent?.name }}</h4>
+              <p class="text-xs text-slate-500 mt-0.5">Lugar: {{ dashboard?.kpis?.nextEvent?.venue }}</p>
             </div>
             <div class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-600 flex justify-between">
               <span>Fecha y hora:</span>
-              <span class="font-bold">{{ formatDate(dashboard.kpis.nextEvent.date) }}</span>
+              <span class="font-bold">{{ formatDate(dashboard?.kpis?.nextEvent?.date) }}</span>
             </div>
             <div class="pt-2">
               <NuxtLink :to="`/events`">
@@ -159,11 +160,11 @@ function formatDate(iso: string): string {
           <template #header>
             <h3 class="font-bold text-slate-900">Actividad reciente</h3>
           </template>
-          <div v-if="dashboard.recentActivity.length === 0" class="text-center py-6 text-sm text-slate-400">
+          <div v-if="!dashboard?.recentActivity?.length" class="text-center py-6 text-sm text-slate-400">
             Sin actividad registrada recientemente.
           </div>
           <ul v-else class="divide-y divide-slate-100">
-            <li v-for="(act, idx) in dashboard.recentActivity" :key="idx" class="py-3 flex justify-between items-start text-xs">
+            <li v-for="(act, idx) in dashboard?.recentActivity" :key="idx" class="py-3 flex justify-between items-start text-xs">
               <div class="space-y-1">
                 <div class="flex items-center gap-1.5 font-semibold text-slate-900">
                   <span
@@ -183,24 +184,24 @@ function formatDate(iso: string): string {
         <AppCard>
           <template #header>
             <h3 class="font-bold text-slate-900">
-              {{ dashboard.type === 'company' ? 'Control de asistencia en puerta' : 'Operaciones de acceso' }}
+              {{ dashboard?.type === 'company' ? 'Control de asistencia en puerta' : 'Operaciones de acceso' }}
             </h3>
           </template>
           <div class="space-y-4 py-3">
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold text-slate-700">
                 <span>
-                  {{ dashboard.type === 'company' ? 'Asistencia acumulada' : 'Eficiencia del ingreso en puerta' }}
+                  {{ dashboard?.type === 'company' ? 'Asistencia acumulada' : 'Eficiencia del ingreso en puerta' }}
                 </span>
-                <span>{{ dashboard.kpis.averageOccupancy }}%</span>
+                <span>{{ dashboard?.kpis?.averageOccupancy ?? 0 }}%</span>
               </div>
-              <AppProgressBar :value="dashboard.kpis.averageOccupancy" variant="primary" />
+              <AppProgressBar :value="dashboard?.kpis?.averageOccupancy ?? 0" variant="primary" />
             </div>
             <div class="text-xs text-slate-500 leading-relaxed pt-2">
               <p class="font-bold text-slate-700 mb-1">
-                {{ dashboard.type === 'company' ? 'Nota operativa:' : 'Métrica de Ocupación:' }}
+                {{ dashboard?.type === 'company' ? 'Nota operativa:' : 'Métrica de Ocupación:' }}
               </p>
-              <template v-if="dashboard.type === 'company'">
+              <template v-if="dashboard?.type === 'company'">
                 Este porcentaje compara el total de check-ins exitosos contra las entradas totales emitidas. Te ayuda a estimar los tiempos de ingreso en tus eventos.
               </template>
               <template v-else>

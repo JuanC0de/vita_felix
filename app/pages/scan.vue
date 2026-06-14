@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CheckinResult } from '~/types/ticketing'
 
-definePageMeta({ requiredRoles: ['GATE_STAFF', 'SUPER_ADMIN'] })
+definePageMeta({ requiredRoles: ['GATE_STAFF', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER'] })
 
 const { validate } = useCheckin()
 const { list: listEvents } = useEvents()
@@ -41,7 +41,7 @@ async function onDetected(token: string) {
   result.value = null
   
   try {
-    const res = await validate(token)
+    const res = await validate(token, selectedEventId.value)
     result.value = res
 
     // Enriquecer historial de escaneos

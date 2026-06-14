@@ -32,7 +32,7 @@ export default defineAppConfig({
     {
       groupName: 'OPERACIÓN',
       items: [
-        { label: 'Control de acceso QR', to: '/scan', roles: ['SUPER_ADMIN', 'GATE_STAFF'] },
+        { label: 'Control de acceso QR', to: '/scan', roles: ['SUPER_ADMIN', 'GATE_STAFF', 'COMPANY_ADMIN', 'EVENT_MANAGER'] },
       ]
     }
   ] as NavGroup[],

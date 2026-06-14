@@ -28,7 +28,8 @@ function fmtMoney(amount: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'long', timeStyle: 'short' })
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })
 }
 </script>
 
@@ -44,11 +45,11 @@ function formatDate(iso: string): string {
     <div v-else class="space-y-6">
       <!-- AppPageHeader -->
       <AppPageHeader
-        :title="`Dashboard: ${dashboard.event.name}`"
-        :subtitle="`Métricas y operaciones en vivo para el evento en ${dashboard.event.venue}.`"
+        :title="`Dashboard: ${dashboard?.event?.name || ''}`"
+        :subtitle="`Métricas y operaciones en vivo para el evento en ${dashboard?.event?.venue || ''}.`"
         :breadcrumbs="[
           { label: 'Eventos', to: '/events' },
-          { label: dashboard.event.name, to: `/events/${id}` },
+          { label: dashboard?.event?.name || 'Evento', to: `/events/${id}` },
           { label: 'Dashboard' }
         ]"
       />
@@ -57,34 +58,34 @@ function formatDate(iso: string): string {
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
         <AppStatCard
           title="Ingresos Estimados"
-          :value="fmtMoney(dashboard.metrics.estimatedRevenue)"
+          :value="fmtMoney(dashboard?.metrics?.estimatedRevenue ?? 0)"
           subtext="Recaudación total estimada"
           trend="up"
           trend-value="COP"
         />
         <AppStatCard
           title="Porcentaje de Ingreso"
-          :value="`${dashboard.metrics.doorEntryPct}%`"
+          :value="`${dashboard?.metrics?.doorEntryPct ?? 0}%`"
           subtext="Asistentes validados"
         />
         <AppStatCard
           title="Capacidad Total"
-          :value="dashboard.metrics.capacityTotal"
+          :value="dashboard?.metrics?.capacityTotal ?? 0"
           subtext="Cupo total sumando etapas"
         />
         <AppStatCard
           title="Tickets Emitidos"
-          :value="dashboard.metrics.ticketsIssued"
+          :value="dashboard?.metrics?.ticketsIssued ?? 0"
           subtext="Boletas vendidas/emitidas"
         />
         <AppStatCard
           title="Tickets Disponibles"
-          :value="dashboard.metrics.ticketsAvailable"
+          :value="dashboard?.metrics?.ticketsAvailable ?? 0"
           subtext="Aforo restante disponible"
         />
         <AppStatCard
           title="Tickets Usados"
-          :value="dashboard.metrics.ticketsUsed"
+          :value="dashboard?.metrics?.ticketsUsed ?? 0"
           subtext="Validados en portería"
         />
       </div>
@@ -96,7 +97,7 @@ function formatDate(iso: string): string {
           <template #header>
             <h3 class="font-bold text-slate-900">Ventas por etapa de boletería</h3>
           </template>
-          <div v-if="dashboard.salesByTier.length === 0" class="text-center py-8 text-sm text-slate-400">
+          <div v-if="!dashboard?.salesByTier || dashboard.salesByTier.length === 0" class="text-center py-8 text-sm text-slate-400">
             Este evento no tiene etapas de boletería configuradas.
           </div>
           <div v-else class="space-y-5 py-2">
@@ -159,7 +160,7 @@ function formatDate(iso: string): string {
               
               <!-- Publicar si está en borrador -->
               <AppButton
-                v-if="dashboard.event.status === 'draft'"
+                v-if="dashboard?.event?.status === 'draft'"
                 size="sm"
                 :loading="statusLoading"
                 @click="changeStatus('publish')"
@@ -168,7 +169,7 @@ function formatDate(iso: string): string {
               </AppButton>
               <!-- Finalizar si está publicado -->
               <AppButton
-                v-else-if="dashboard.event.status === 'published'"
+                v-else-if="dashboard?.event?.status === 'published'"
                 size="sm"
                 :loading="statusLoading"
                 @click="changeStatus('finish')"
@@ -176,7 +177,7 @@ function formatDate(iso: string): string {
                 Finalizar
               </AppButton>
               <span v-else class="text-xs font-bold uppercase text-slate-400">
-                {{ dashboard.event.status }}
+                {{ dashboard?.event?.status }}
               </span>
             </div>
           </div>

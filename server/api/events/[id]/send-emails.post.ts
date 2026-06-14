@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
     .from('tickets')
     .select('*, attendees(full_name, email), events(name, event_at, venue), ticket_tiers(name)')
     .eq('event_id', id)
-    .neq('status', 'void')
+    .neq('status', 'void') as any
 
   if (tErr || !tickets) {
     throw createError({ statusCode: 500, statusMessage: 'No se pudo cargar el listado de tickets activos' })
@@ -54,7 +54,7 @@ export default defineEventHandler(async (event) => {
   let sentCount = 0
   let failCount = 0
 
-  const sendPromises = tickets.map(async (ticket) => {
+  const sendPromises = tickets.map(async (ticket: any) => {
     try {
       if (!ticket.pdf_path || !ticket.attendees?.email) {
         failCount++

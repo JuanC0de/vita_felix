@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     .from('tickets')
     .select('*, attendees(full_name, email), events(name, event_at, venue), ticket_tiers(name)')
     .eq('id', id)
-    .maybeSingle()
+    .maybeSingle() as any
 
   if (tErr || !ticket) {
     throw createError({ statusCode: 404, statusMessage: 'Ticket no encontrado' })

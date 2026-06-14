@@ -17,7 +17,8 @@ function fmtMoney(amount: number): string {
 }
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+  if (!iso) return ''
+  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
 }
 </script>
 
@@ -39,24 +40,24 @@ function formatDate(iso: string): string {
       <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
         <AppStatCard
           title="Eventos Activos"
-          :value="dashboard.kpis.activeEvents"
+          :value="dashboard?.kpis?.activeEvents"
           subtext="Eventos en venta/publicados"
         />
         <AppStatCard
           title="Tickets Vendidos"
-          :value="dashboard.kpis.issuedTickets"
+          :value="dashboard?.kpis?.issuedTickets"
           subtext="Total emisiones"
         />
         <AppStatCard
           title="Ingresos Estimados"
-          :value="fmtMoney(dashboard.kpis.estimatedRevenue)"
+          :value="fmtMoney(dashboard?.kpis?.estimatedRevenue ?? 0)"
           subtext="Recaudación bruta"
           trend="up"
           trend-value="COP"
         />
         <AppStatCard
           title="Ocupación Promedio"
-          :value="`${dashboard.kpis.averageOccupancy}%`"
+          :value="`${dashboard?.kpis?.averageOccupancy ?? 0}%`"
           subtext="Asistencia en puerta"
         />
       </div>
@@ -66,17 +67,17 @@ function formatDate(iso: string): string {
           <template #header>
             <h3 class="font-bold text-slate-900">Próximo evento programado</h3>
           </template>
-          <div v-if="!dashboard.kpis.nextEvent" class="text-center py-8 text-sm text-slate-400">
+          <div v-if="!dashboard?.kpis?.nextEvent" class="text-center py-8 text-sm text-slate-400">
             No hay eventos futuros programados.
           </div>
           <div v-else class="space-y-4 py-2">
             <div>
-              <h4 class="text-lg font-bold text-slate-900">{{ dashboard.kpis.nextEvent.name }}</h4>
-              <p class="text-xs text-slate-500 mt-0.5">Lugar: {{ dashboard.kpis.nextEvent.venue }}</p>
+              <h4 class="text-lg font-bold text-slate-900">{{ dashboard?.kpis?.nextEvent?.name }}</h4>
+              <p class="text-xs text-slate-500 mt-0.5">Lugar: {{ dashboard?.kpis?.nextEvent?.venue }}</p>
             </div>
             <div class="text-xs bg-slate-50 border border-slate-200 rounded-lg p-3 text-slate-600 flex justify-between">
               <span>Fecha y hora:</span>
-              <span class="font-bold">{{ formatDate(dashboard.kpis.nextEvent.date) }}</span>
+              <span class="font-bold">{{ formatDate(dashboard?.kpis?.nextEvent?.date) }}</span>
             </div>
             <div class="pt-2">
               <NuxtLink :to="`/events`">
@@ -94,9 +95,9 @@ function formatDate(iso: string): string {
             <div class="space-y-1">
               <div class="flex justify-between text-xs font-semibold text-slate-700">
                 <span>Asistencia acumulada</span>
-                <span>{{ dashboard.kpis.averageOccupancy }}%</span>
+                <span>{{ dashboard?.kpis?.averageOccupancy ?? 0 }}%</span>
               </div>
-              <AppProgressBar :value="dashboard.kpis.averageOccupancy" variant="primary" />
+              <AppProgressBar :value="dashboard?.kpis?.averageOccupancy ?? 0" variant="primary" />
             </div>
             <div class="text-xs text-slate-500 leading-relaxed pt-2">
               <p class="font-bold text-slate-700 mb-1">Nota operativa:</p>

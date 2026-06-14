@@ -6,8 +6,8 @@ import type { CheckinResult } from '~/types/ticketing'
  * El cliente NO decide la validez (req. 5.5).
  */
 export function useCheckin() {
-  function validate(token: string): Promise<CheckinResult> {
-    return $fetch<CheckinResult>('/api/checkin/validate', { method: 'POST', body: { token } })
+  function validate(token: string, eventId?: string): Promise<CheckinResult> {
+    return $fetch<CheckinResult>('/api/checkin/validate', { method: 'POST', body: { token, eventId } })
   }
 
   return { validate }
