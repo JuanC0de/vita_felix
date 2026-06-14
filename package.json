@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@nuxtjs/supabase": "^2.0.9",
+    "jsqr": "^1.4.0",
     "nodemailer": "^8.0.11",
     "nuxt": "^4.4.7",
     "pdf-lib": "^1.17.1",

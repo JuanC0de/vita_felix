@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import jsQR from 'jsqr'
+
 const emit = defineEmits<{ detected: [token: string] }>()
 
 const video = ref<HTMLVideoElement | null>(null)
@@ -7,45 +9,72 @@ const supported = ref(true)
 const manualToken = ref('')
 let stream: MediaStream | null = null
 let rafId = 0
-let detector: { detect: (src: CanvasImageSource) => Promise<Array<{ rawValue: string }>> } | null = null
 let lastEmit = 0
 
+// Canvas en memoria para procesamiento de fotogramas de video
+let canvas: HTMLCanvasElement | null = null
+let ctx: CanvasRenderingContext2D | null = null
+
+/**
+ * Inicializa la cámara del dispositivo y el canvas para procesamiento de fotogramas.
+ */
 async function start() {
-  const BD = (globalThis as unknown as { BarcodeDetector?: new (o: { formats: string[] }) => typeof detector }).BarcodeDetector
-  if (!BD) {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    cameraError.value = 'Tu navegador no soporta el acceso a la cámara o requiere una conexión segura (HTTPS). Usa la entrada manual.'
     supported.value = false
     return
   }
   try {
-    detector = new BD({ formats: ['qr_code'] })
     stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
     if (video.value) {
       video.value.srcObject = stream
       await video.value.play()
+      
+      // Crear canvas de procesamiento en memoria
+      canvas = document.createElement('canvas')
+      ctx = canvas.getContext('2d', { willReadFrequently: true })
+      
       scanLoop()
     }
-  } catch {
-    cameraError.value = 'No se pudo acceder a la cámara. Usa la entrada manual.'
-    supported.value = false
+  } catch (err) {
+    console.error('Error al inicializar el dispositivo de video:', err)
+    cameraError.value = 'No se pudo acceder a la cámara. Concede los permisos del navegador o ingresa el código de forma manual.'
   }
 }
 
-async function scanLoop() {
-  if (!detector || !video.value) return
-  try {
-    const codes = await detector.detect(video.value)
-    const first = codes[0]
+/**
+ * Bucle de escaneo fotograma a fotograma usando jsQR.
+ */
+function scanLoop() {
+  if (!video.value || !canvas || !ctx) return
+  
+  if (video.value.readyState === video.value.HAVE_ENOUGH_DATA) {
+    const width = video.value.videoWidth
+    const height = video.value.videoHeight
+    canvas.width = width
+    canvas.height = height
+    
+    ctx.drawImage(video.value, 0, 0, width, height)
+    const imageData = ctx.getImageData(0, 0, width, height)
+    
+    // Decodificar el código QR desde los datos de imagen
+    const code = jsQR(imageData.data, imageData.width, imageData.height, {
+      inversionAttempts: 'dontInvert',
+    })
+    
     const now = Date.now()
-    if (first && now - lastEmit > 2500) {
+    if (code && code.data && now - lastEmit > 2500) {
       lastEmit = now
-      emit('detected', first.rawValue)
+      emit('detected', code.data)
     }
-  } catch {
-    // Ignorar fallos de frame puntuales.
   }
+  
   rafId = requestAnimationFrame(scanLoop)
 }
 
+/**
+ * Envía el código ingresado de forma manual.
+ */
 function submitManual() {
   const token = manualToken.value.trim()
   if (token) {
@@ -54,6 +83,9 @@ function submitManual() {
   }
 }
 
+/**
+ * Detiene las transmisiones de la cámara y cancela el bucle de renderizado.
+ */
 function stop() {
   cancelAnimationFrame(rafId)
   stream?.getTracks().forEach((t) => t.stop())
