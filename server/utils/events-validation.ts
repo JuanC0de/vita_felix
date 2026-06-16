@@ -113,6 +113,25 @@ export function validateTierInput(input: unknown): ValidationResult<TierWriteMod
     errors.push({ field: 'quota', message: 'El cupo debe ser un entero mayor o igual a cero.' })
   }
 
+  let entryTimeLimit: string | null = null
+  if (data.entryTimeLimit !== undefined && data.entryTimeLimit !== null && data.entryTimeLimit !== '') {
+    if (typeof data.entryTimeLimit !== 'string' || !/^\d{2}:\d{2}(:\d{2})?$/.test(data.entryTimeLimit)) {
+      errors.push({ field: 'entryTimeLimit', message: 'El límite de hora de ingreso debe ser una hora válida (HH:MM).' })
+    } else {
+      entryTimeLimit = (data.entryTimeLimit as string).trim()
+    }
+  }
+
+  let surchargeAmount = 0
+  if (data.surchargeAmount !== undefined && data.surchargeAmount !== null) {
+    const val = Number(data.surchargeAmount)
+    if (Number.isNaN(val) || !Number.isFinite(val) || val < 0) {
+      errors.push({ field: 'surchargeAmount', message: 'El recargo debe ser un número mayor o igual a cero.' })
+    } else {
+      surchargeAmount = val
+    }
+  }
+
   if (errors.length > 0) return { ok: false, errors }
 
   return {
@@ -122,6 +141,8 @@ export function validateTierInput(input: unknown): ValidationResult<TierWriteMod
       price: data.price as number,
       currency: data.currency as string,
       quota: data.quota as number,
+      entryTimeLimit,
+      surchargeAmount,
     },
   }
 }

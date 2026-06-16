@@ -31,6 +31,7 @@ export interface TicketPdfData {
   organizerName?: string | null
   isSpecialGuest?: boolean
   hostName?: string | null
+  entryTimeLimit?: string | null
 }
 
 /**
@@ -384,8 +385,13 @@ export async function generateTicketPdf(data: TicketPdfData): Promise<Uint8Array
   // 4) Fecha y hora del evento
   drawCentered(formatDate(data.eventAt), 356, 10, font, muted)
 
-  // 5) Campo opcional "Organiza: {{organizerName}}"
-  if (data.organizerName) {
+  // 5) Campo opcional "Límite de ingreso: hasta las HH:MM" y "Organiza: {{organizerName}}"
+  if (data.entryTimeLimit) {
+    drawCentered(`Ingreso válido hasta las ${data.entryTimeLimit}`, 340, 9, bold, rgb(0.70, 0.33, 0.04))
+    if (data.organizerName) {
+      drawCentered(`Organiza: ${data.organizerName}`, 326, 8, font, muted)
+    }
+  } else if (data.organizerName) {
     drawCentered(`Organiza: ${data.organizerName}`, 340, 9, font, muted)
   }
 

@@ -41,12 +41,14 @@ interface TierRow {
   price: number | string
   currency: string
   quota: number
+  entry_time_limit: string | null
+  surcharge_amount: number | string
   created_at: string
   updated_at: string
 }
 
 const EVENT_COLUMNS = 'id, company_id, name, venue, event_at, status, description, flyer_url, theme_config, created_at, updated_at'
-const TIER_COLUMNS = 'id, event_id, company_id, name, price, currency, quota, created_at, updated_at'
+const TIER_COLUMNS = 'id, event_id, company_id, name, price, currency, quota, entry_time_limit, surcharge_amount, created_at, updated_at'
 
 function mapEvent(row: EventRow): Event {
   return {
@@ -74,6 +76,8 @@ function mapTier(row: TierRow): TicketTier {
     price: typeof row.price === 'string' ? Number(row.price) : row.price,
     currency: row.currency.trim(),
     quota: row.quota,
+    entryTimeLimit: row.entry_time_limit ? row.entry_time_limit.substring(0, 5) : null,
+    surchargeAmount: typeof row.surcharge_amount === 'string' ? Number(row.surcharge_amount) : row.surcharge_amount,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }
@@ -199,6 +203,8 @@ export async function createTier(
       price: model.price,
       currency: model.currency,
       quota: model.quota,
+      entry_time_limit: model.entryTimeLimit,
+      surcharge_amount: model.surchargeAmount,
     })
     .select(TIER_COLUMNS)
     .single()
@@ -220,6 +226,8 @@ export async function updateTier(
       price: model.price,
       currency: model.currency,
       quota: model.quota,
+      entry_time_limit: model.entryTimeLimit,
+      surcharge_amount: model.surchargeAmount,
     })
     .eq('id', tierId)
     .eq('event_id', eventId)

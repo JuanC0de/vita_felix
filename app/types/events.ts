@@ -54,6 +54,8 @@ export interface TicketTier {
   currency: string
   /** Cupo entero, mayor o igual a cero. */
   quota: number
+  entryTimeLimit?: string | null
+  surchargeAmount?: number
   createdAt: string
   updatedAt: string
 }
@@ -87,6 +89,8 @@ export interface TierCreate {
   price: number
   currency: string
   quota: number
+  entryTimeLimit?: string | null
+  surchargeAmount?: number
 }
 
 /** Payload para actualizar una etapa de boletería. */
@@ -98,6 +102,8 @@ export interface TierWriteModel {
   price: number
   currency: string
   quota: number
+  entryTimeLimit: string | null
+  surchargeAmount: number
 }
 
 /** Evento con sus etapas de boletería embebidas (respuesta de detalle). */

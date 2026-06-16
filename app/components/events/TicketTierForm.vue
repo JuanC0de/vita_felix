@@ -13,6 +13,8 @@ const name = ref(props.initial?.name ?? '')
 const price = ref<number | null>(props.initial?.price ?? 0)
 const currency = ref(props.initial?.currency ?? 'COP')
 const quota = ref<number | null>(props.initial?.quota ?? 0)
+const entryTimeLimit = ref(props.initial?.entryTimeLimit ?? '')
+const surchargeAmount = ref<number | null>(props.initial?.surchargeAmount ?? 0)
 
 const errors = reactive<Record<string, string>>({})
 
@@ -26,6 +28,9 @@ function validate(): boolean {
   if (quota.value === null || !Number.isInteger(quota.value) || quota.value < 0) {
     errors.quota = 'El cupo debe ser un entero mayor o igual a cero.'
   }
+  if (surchargeAmount.value === null || Number.isNaN(surchargeAmount.value) || surchargeAmount.value < 0) {
+    errors.surchargeAmount = 'El recargo debe ser mayor o igual a cero.'
+  }
   return Object.keys(errors).length === 0
 }
 
@@ -37,12 +42,14 @@ function onSubmit() {
     price: price.value as number,
     currency: currency.value.toUpperCase(),
     quota: quota.value as number,
+    entryTimeLimit: entryTimeLimit.value ? entryTimeLimit.value : null,
+    surchargeAmount: surchargeAmount.value as number,
   })
 }
 </script>
 
 <template>
-  <form class="grid grid-cols-1 gap-3 sm:grid-cols-5 sm:items-end" novalidate @submit.prevent="onSubmit">
+  <form class="grid grid-cols-1 gap-3 sm:grid-cols-7 sm:items-end" novalidate @submit.prevent="onSubmit">
     <div class="sm:col-span-2">
       <label class="block text-xs font-medium text-slate-600">Nombre</label>
       <input
@@ -85,7 +92,26 @@ function onSubmit() {
       >
       <p v-if="errors.quota" class="mt-1 text-xs text-rose-600">{{ errors.quota }}</p>
     </div>
-    <div class="sm:col-span-5">
+    <div>
+      <label class="block text-xs font-medium text-slate-600">Límite Hora</label>
+      <input
+        v-model="entryTimeLimit"
+        type="time"
+        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none bg-white"
+      >
+    </div>
+    <div>
+      <label class="block text-xs font-medium text-slate-600">Recargo</label>
+      <input
+        v-model.number="surchargeAmount"
+        type="number"
+        min="0"
+        step="0.01"
+        class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
+      >
+      <p v-if="errors.surchargeAmount" class="mt-1 text-xs text-rose-600">{{ errors.surchargeAmount }}</p>
+    </div>
+    <div class="sm:col-span-7">
       <button
         type="submit"
         :disabled="loading"

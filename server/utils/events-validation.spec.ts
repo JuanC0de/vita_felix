@@ -84,8 +84,29 @@ describe('validateTierInput', () => {
     const result = validateTierInput({ name: 'VIP', price: 120000, currency: 'COP', quota: 50 })
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.value).toEqual({ name: 'VIP', price: 120000, currency: 'COP', quota: 50 })
+      expect(result.value).toEqual({ name: 'VIP', price: 120000, currency: 'COP', quota: 50, entryTimeLimit: null, surchargeAmount: 0 })
     }
+  })
+
+  it('acepta un tier con límite de tiempo y recargo válidos', () => {
+    const result = validateTierInput({ name: 'Early Bird', price: 50000, currency: 'COP', quota: 100, entryTimeLimit: '22:30', surchargeAmount: 15000 })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.value.entryTimeLimit).toBe('22:30')
+      expect(result.value.surchargeAmount).toBe(15000)
+    }
+  })
+
+  it('rechaza límite de tiempo con formato inválido', () => {
+    const result = validateTierInput({ name: 'VIP', price: 10000, currency: 'COP', quota: 10, entryTimeLimit: 'tarde' })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors.map((e) => e.field)).toContain('entryTimeLimit')
+  })
+
+  it('rechaza recargo negativo', () => {
+    const result = validateTierInput({ name: 'VIP', price: 10000, currency: 'COP', quota: 10, surchargeAmount: -5000 })
+    expect(result.ok).toBe(false)
+    if (!result.ok) expect(result.errors.map((e) => e.field)).toContain('surchargeAmount')
   })
 
   it('acepta precio cero (gratis)', () => {

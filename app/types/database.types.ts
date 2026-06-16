@@ -172,6 +172,8 @@ export interface Database {
           price: number
           currency: string
           quota: number
+          entry_time_limit: string | null
+          surcharge_amount: number
           created_at: string
           updated_at: string
         }
@@ -183,6 +185,8 @@ export interface Database {
           price?: number
           currency: string
           quota?: number
+          entry_time_limit?: string | null
+          surcharge_amount?: number
           created_at?: string
           updated_at?: string
         }
@@ -194,6 +198,8 @@ export interface Database {
           price?: number
           currency?: string
           quota?: number
+          entry_time_limit?: string | null
+          surcharge_amount?: number
           created_at?: string
           updated_at?: string
         }
@@ -278,6 +284,8 @@ export interface Database {
           ticket_id: string | null
           scanned_by: string | null
           result: string
+          surcharge_applied: boolean
+          surcharge_paid: number
           created_at: string
         }
         Insert: {
@@ -286,6 +294,8 @@ export interface Database {
           ticket_id?: string | null
           scanned_by?: string | null
           result: string
+          surcharge_applied?: boolean
+          surcharge_paid?: number
           created_at?: string
         }
         Update: {
@@ -294,6 +304,8 @@ export interface Database {
           ticket_id?: string | null
           scanned_by?: string | null
           result?: string
+          surcharge_applied?: boolean
+          surcharge_paid?: number
           created_at?: string
         }
         Relationships: []
@@ -308,6 +320,8 @@ export interface Database {
           used_at: string | null
           full_name: string | null
           tier_name: string | null
+          surcharge_applied: boolean | null
+          surcharge_amount: number | string | null
         }[]
       }
     }

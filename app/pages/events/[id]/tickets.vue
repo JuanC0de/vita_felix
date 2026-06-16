@@ -76,6 +76,7 @@ async function onDelete(tierId: string) {
 }
 
 const copied = ref(false)
+const copiedTierId = ref<string | null>(null)
 
 function getRegisterUrl(): string {
   if (import.meta.client) {
@@ -91,6 +92,26 @@ async function copyRegisterUrl() {
     copied.value = true
     setTimeout(() => {
       copied.value = false
+    }, 2000)
+  } catch (err) {
+    // Silencioso ante errores
+  }
+}
+
+function getTierRegisterUrl(tierId: string): string {
+  if (import.meta.client) {
+    return `${window.location.origin}/e/${id}/register?tier=${tierId}`
+  }
+  return `/e/${id}/register?tier=${tierId}`
+}
+
+async function copyTierLink(tierId: string) {
+  const url = getTierRegisterUrl(tierId)
+  try {
+    await navigator.clipboard.writeText(url)
+    copiedTierId.value = tierId
+    setTimeout(() => {
+      if (copiedTierId.value === tierId) copiedTierId.value = null
     }, 2000)
   } catch (err) {
     // Silencioso ante errores
@@ -163,6 +184,9 @@ async function copyRegisterUrl() {
                 <p class="text-xs text-slate-500 mt-1">
                   Precio: <span class="font-semibold text-slate-800">{{ fmtPrice(t) }}</span> · Cupo: {{ t.quota }}
                 </p>
+                <p v-if="t.entryTimeLimit" class="text-[10px] text-amber-600 font-semibold mt-1">
+                  🕒 Límite de ingreso: hasta las {{ t.entryTimeLimit }} · Recargo: {{ new Intl.NumberFormat('es-CO', { style: 'currency', currency: t.currency, maximumFractionDigits: 0 }).format(t.surchargeAmount ?? 0) }}
+                </p>
               </div>
 
               <!-- Barra de Progreso de Aforo -->
@@ -174,7 +198,16 @@ async function copyRegisterUrl() {
                 <AppProgressBar :value="getSoldProgress(t.id).sold" :max="t.quota" variant="primary" />
               </div>
 
-              <div class="flex items-center gap-3 self-end sm:self-auto">
+              <div class="flex items-center gap-2 self-end sm:self-auto">
+                <AppButton
+                  size="sm"
+                  :variant="copiedTierId === t.id ? 'primary' : 'secondary'"
+                  class="shrink-0 min-w-[95px]"
+                  @click="copyTierLink(t.id)"
+                >
+                  <span v-if="copiedTierId === t.id">✓ Copiado</span>
+                  <span v-else>🔗 Enlace</span>
+                </AppButton>
                 <AppButton variant="ghost" size="sm" @click="editingId = t.id">
                   Editar
                 </AppButton>
@@ -187,7 +220,7 @@ async function copyRegisterUrl() {
             <!-- Formulario de Edición -->
             <div v-else class="space-y-3 bg-slate-50/50 p-4 rounded-xl border border-slate-100">
               <EventsTicketTierForm
-                :initial="{ name: t.name, price: t.price, currency: t.currency, quota: t.quota }"
+                :initial="{ name: t.name, price: t.price, currency: t.currency, quota: t.quota, entryTimeLimit: t.entryTimeLimit, surchargeAmount: t.surchargeAmount }"
                 :loading="loading"
                 submit-label="Guardar cambios de la etapa"
                 @submit="(p) => onUpdate(t.id, p)"

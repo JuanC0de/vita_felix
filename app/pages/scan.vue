@@ -52,7 +52,7 @@ async function onDetected(token: string) {
     if (res.status === 'admitted') {
       name = res.attendee.fullName
       tierName = res.attendee.tierName
-      statusText = 'Admitido'
+      statusText = res.surchargeApplied ? 'Admitido (Recargo)' : 'Admitido'
     } else if (res.status === 'already_used') {
       name = 'Repetido'
       tierName = 'N/A'
@@ -132,16 +132,34 @@ async function onDetected(token: string) {
           <!-- CASO 1: ADMITIDO (Verde) -->
           <div
             v-if="result.status === 'admitted'"
-            class="rounded-xl border border-emerald-300 bg-emerald-50 p-6 text-emerald-900 shadow-md text-center space-y-2 animate-bounce-short"
+            class="rounded-xl border p-6 shadow-md text-center space-y-2 animate-bounce-short"
+            :class="[
+              result.surchargeApplied 
+                ? 'border-amber-300 bg-amber-50 text-amber-900' 
+                : 'border-emerald-300 bg-emerald-50 text-emerald-900'
+            ]"
           >
-            <div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500 text-white font-bold text-xl mb-1 shadow-sm">
-              ✓
+            <div 
+              class="inline-flex h-12 w-12 items-center justify-center rounded-full text-white font-bold text-xl mb-1 shadow-sm"
+              :class="[result.surchargeApplied ? 'bg-amber-500' : 'bg-emerald-500']"
+            >
+              {{ result.surchargeApplied ? '⚠️' : '✓' }}
             </div>
-            <h4 class="text-2xl font-black tracking-tight">ACCESO ADMITIDO</h4>
-            <div class="text-sm font-semibold text-emerald-800">
+            <h4 class="text-2xl font-black tracking-tight">
+              {{ result.surchargeApplied ? 'ADMITIDO CON RECARGO' : 'ACCESO ADMITIDO' }}
+            </h4>
+            <div class="text-sm font-semibold text-slate-800">
               <p class="text-base font-bold text-slate-900">{{ result.attendee.fullName }}</p>
-              <p class="text-xs text-slate-600 mt-0.5">Entrada: {{ result.attendee.tierName }}</p>
-              <p class="text-[10px] text-slate-400 mt-1">Hora ingreso: {{ new Date(result.checkedInAt).toLocaleTimeString('es-CO') }}</p>
+              <p class="text-xs text-slate-650 mt-0.5">Entrada: {{ result.attendee.tierName }}</p>
+              
+              <div v-if="result.surchargeApplied" class="mt-3 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-slate-800 space-y-1">
+                <p class="text-xs font-bold uppercase tracking-wider text-amber-700">Recargo por ingreso tardío</p>
+                <p class="text-lg font-black text-amber-800">
+                  Cobrar: {{ new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(result.surchargeAmount ?? 0) }}
+                </p>
+              </div>
+
+              <p class="text-[10px] text-slate-400 mt-2">Hora ingreso: {{ new Date(result.checkedInAt).toLocaleTimeString('es-CO') }}</p>
             </div>
           </div>
 
@@ -209,7 +227,8 @@ async function onDetected(token: string) {
                   class="rounded-sm px-1.5 py-0.5 text-[9px] font-bold tracking-tight uppercase"
                   :class="[
                     sh.result === 'Admitido' && 'bg-emerald-50 text-emerald-700 border border-emerald-100',
-                    sh.result === 'Ya usado' && 'bg-amber-50 text-amber-700 border border-amber-100',
+                    sh.result === 'Admitido (Recargo)' && 'bg-amber-50 text-amber-750 border border-amber-100',
+                    sh.result === 'Ya usado' && 'bg-orange-50 text-orange-700 border border-orange-100',
                     sh.result.startsWith('Rechazado') && 'bg-rose-50 text-rose-700 border border-rose-100'
                   ]"
                 >

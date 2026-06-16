@@ -86,7 +86,13 @@ export interface RegistrationResult {
 
 /** Resultado de una validación/check-in (req. 7.1). */
 export type CheckinResult =
-  | { status: 'admitted'; attendee: { fullName: string; tierName: string }; checkedInAt: string }
+  | {
+      status: 'admitted'
+      attendee: { fullName: string; tierName: string }
+      checkedInAt: string
+      surchargeApplied?: boolean
+      surchargeAmount?: number
+    }
   | { status: 'already_used'; usedAt: string }
   | {
       status: 'invalid'

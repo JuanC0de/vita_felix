@@ -7,6 +7,8 @@ const route = useRoute()
 const eventId = route.params.eventId as string
 const { getEvent, register } = useRegistration()
 
+const defaultTierId = computed(() => route.query.tier as string | undefined)
+
 const { data: event, error } = await useAsyncData<PublicEvent>(`public-event:${eventId}`, () =>
   getEvent(eventId),
 )
@@ -190,7 +192,7 @@ function resetForm() {
             </div>
           </div>
 
-          <TicketingRegistrationForm :event="event" :loading="loading" @submit="onSubmit" />
+          <TicketingRegistrationForm :event="event" :loading="loading" :default-tier-id="defaultTierId" @submit="onSubmit" />
         </div>
 
         <!-- Estado 2: Procesando Emision Secuencial (Lote) -->

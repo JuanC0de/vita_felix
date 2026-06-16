@@ -96,11 +96,11 @@ export async function registerAndIssue(
 
   const { data: tier } = await db
     .from('ticket_tiers')
-    .select('id, name')
+    .select('id, name, entry_time_limit')
     .eq('id', model.tierId)
     .eq('event_id', eventId)
     .maybeSingle()
-  const tierRow = tier as unknown as { id: string; name: string } | null
+  const tierRow = tier as unknown as { id: string; name: string; entry_time_limit: string | null } | null
   if (!tierRow) fail('La etapa de boletería seleccionada no es válida', 422)
 
   // 2) Dedup por cédula/evento (req. 1.4).
@@ -151,6 +151,8 @@ export async function registerAndIssue(
   const exp = eventEpoch + graceHours * 3600
   const qrToken = signToken({ sub: ticketId, exp }, qrSecret)
 
+  const entryTimeLimit = tierRow.entry_time_limit ? tierRow.entry_time_limit.substring(0, 5) : null
+
   // 6) Generar PDF (sin cédula) y subirlo a Storage privado (req. 4.1, 4.2, 4.5).
   const pdfBytes = await generateTicketPdf({
     qrToken,
@@ -163,6 +165,7 @@ export async function registerAndIssue(
     flyerUrl: eventRow.flyer_url,
     themeConfig: eventRow.theme_config,
     organizerName: eventRow.companies ? eventRow.companies.name : null,
+    entryTimeLimit,
   })
   const pdfPath = `${ticketId}.pdf`
   const { error: upErr } = await db.storage
@@ -220,6 +223,7 @@ export async function registerAndIssue(
             <p style="margin: 5px 0;"><strong>Fecha:</strong> ${formattedDate}</p>
             <p style="margin: 5px 0;"><strong>Lugar:</strong> ${eventRow.venue}</p>
             <p style="margin: 5px 0;"><strong>Tipo de Entrada:</strong> ${tierRow.name}</p>
+            ${entryTimeLimit ? `<p style="margin: 5px 0; color: #b45309;"><strong>Límite de ingreso:</strong> Ingreso válido hasta las ${entryTimeLimit}</p>` : ''}
           </div>
 
           <p>Adjunto a este correo encontrarás tu ticket de ingreso en formato PDF con el código QR de acceso.</p>
@@ -278,6 +282,8 @@ interface CheckinRpcRow {
   used_at: string | null
   full_name: string | null
   tier_name: string | null
+  surcharge_applied: boolean | null
+  surcharge_amount: number | string | null
 }
 
 /**
@@ -297,6 +303,8 @@ export async function checkinTicket(event: H3Event, ticketId: string): Promise<C
       status: 'admitted',
       attendee: { fullName: row.full_name ?? '', tierName: row.tier_name ?? '' },
       checkedInAt: row.used_at ?? new Date().toISOString(),
+      surchargeApplied: !!row.surcharge_applied,
+      surchargeAmount: typeof row.surcharge_amount === 'string' ? Number(row.surcharge_amount) : (row.surcharge_amount ?? 0),
     }
   }
   if (row.result === 'already_used') {

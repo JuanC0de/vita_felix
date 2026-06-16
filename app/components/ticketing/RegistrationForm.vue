@@ -4,6 +4,7 @@ import type { PublicEvent, RegistrationInput } from '~/types/ticketing'
 const props = defineProps<{
   event: PublicEvent
   loading?: boolean
+  defaultTierId?: string
 }>()
 
 const emit = defineEmits<{ submit: [payload: Array<Omit<RegistrationInput, 'eventId'>>] }>()
@@ -16,28 +17,38 @@ interface AttendeeInput {
   errors: Record<string, string>
 }
 
+const isTierValid = computed(() => {
+  return !!props.defaultTierId && props.event.tiers.some(t => t.id === props.defaultTierId)
+})
+
+const getInitialTierId = () => {
+  return isTierValid.value ? (props.defaultTierId || '') : (props.event.tiers[0]?.id ?? '')
+}
+
 // Inicializa con el primer asistente (titular)
 const attendees = ref<AttendeeInput[]>([
   {
     fullName: '',
     cedula: '',
     email: '',
-    tierId: props.event.tiers[0]?.id ?? '',
+    tierId: getInitialTierId(),
     errors: {}
   }
 ])
 
-function formatPrice(price: number, currency: string): string {
-  if (price === 0) return 'Gratis'
-  return `${price.toLocaleString('es-CO')} ${currency}`
-}
+const filteredTiers = computed(() => {
+  if (isTierValid.value) {
+    return props.event.tiers.filter(t => t.id === props.defaultTierId)
+  }
+  return props.event.tiers
+})
 
 function addAttendee() {
   attendees.value.push({
     fullName: '',
     cedula: '',
     email: '',
-    tierId: props.event.tiers[0]?.id ?? '',
+    tierId: getInitialTierId(),
     errors: {}
   })
 }
@@ -142,10 +153,11 @@ function onSubmit() {
           <select
             :id="`tier-${index}`"
             v-model="att.tierId"
-            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none bg-white"
+            :disabled="isTierValid"
+            class="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none bg-white disabled:bg-slate-100 disabled:text-slate-500"
           >
-            <option v-for="t in event.tiers" :key="t.id" :value="t.id">
-              {{ t.name }} — {{ formatPrice(t.price, t.currency) }}
+            <option v-for="t in filteredTiers" :key="t.id" :value="t.id">
+              {{ t.name }} — {{ t.price === 0 ? 'Gratis' : `${t.price.toLocaleString('es-CO')} ${t.currency}` }}
             </option>
           </select>
           <p v-if="att.errors.tierId" class="mt-1 text-xs text-rose-600 font-medium">{{ att.errors.tierId }}</p>
