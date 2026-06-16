@@ -81,7 +81,8 @@ export default defineEventHandler(async (event) => {
         month: 'long',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        timeZone: 'America/Bogota'
       })
 
       // Enviar correo individual

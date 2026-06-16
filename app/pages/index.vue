@@ -18,7 +18,7 @@ function fmtMoney(amount: number): string {
 
 function formatDate(iso: string): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short' })
+  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'America/Bogota' })
 }
 </script>
 

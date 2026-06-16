@@ -78,7 +78,7 @@ async function fetchImageBuffer(url: string): Promise<Buffer | null> {
 function formatDate(iso: string): string {
   const d = new Date(iso)
   if (Number.isNaN(d.getTime())) return iso
-  return d.toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })
+  return d.toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' })
 }
 
 /**

@@ -30,7 +30,7 @@ const currentAttendeeName = ref('')
 const registeredAttendees = ref<RegisteredAttendee[]>([])
 
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short' })
+  return new Date(iso).toLocaleString('es-CO', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/Bogota' })
 }
 
 const progressPercentage = computed(() => {
