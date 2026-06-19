@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { CheckinResult } from '~/types/ticketing'
 
-definePageMeta({ requiredRoles: ['GATE_STAFF', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER'] })
+definePageMeta({ requiredRoles: ['GATE_STAFF', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER', 'LOGISTICS'] })
 
 const { validate } = useCheckin()
 const { list: listEvents } = useEvents()
@@ -89,13 +89,24 @@ async function onDetected(token: string) {
     />
 
     <!-- Selector de Evento Activo -->
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs max-w-md">
+    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-xs max-w-md flex flex-col space-y-3">
       <AppSelect
         v-model="selectedEventId"
         label="Selecciona el evento en puerta"
         :options="(events ?? []).map(e => ({ value: e.id, label: e.name }))"
         required
       />
+      <div v-if="selectedEventId" class="pt-1">
+        <NuxtLink
+          :to="`/events/${selectedEventId}/taquilla`"
+          class="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg text-xs transition-all flex items-center justify-center space-x-2 shadow-sm shadow-indigo-600/10 cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+          </svg>
+          <span>Abrir Taquilla / Venta en Puerta</span>
+        </NuxtLink>
+      </div>
     </div>
 
     <!-- Layout Dividido: Escáner y Feedback (Izquierda) + Historial (Derecha) -->

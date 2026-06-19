@@ -31,6 +31,8 @@ export interface Ticket {
   usedAt: string | null
   pdfPath: string | null
   createdAt: string
+  channel?: 'online' | 'door'
+  cashSessionId?: string | null
 }
 
 /** Registro de auditoría de un intento de check-in (req. 6.5). */
@@ -98,3 +100,31 @@ export type CheckinResult =
       status: 'invalid'
       reason: 'signature' | 'expired' | 'malformed' | 'void' | 'event_cancelled' | 'not_found'
     }
+
+/** Representación de una sesión de caja en el frontend. */
+export interface CashSession {
+  id: string
+  companyId: string
+  eventId: string
+  userId: string
+  userFullName?: string
+  openedAt: string
+  closedAt: string | null
+  openingBalance: number
+  closingBalanceExpected: number | null
+  closingBalanceReal: number | null
+  status: 'open' | 'closed'
+}
+
+/** Transacción financiera de venta en puerta. */
+export interface DoorSale {
+  id: string
+  companyId: string
+  eventId: string
+  cashSessionId: string
+  ticketId: string
+  amount: number
+  paymentMethod: 'cash' | 'card'
+  createdAt: string
+}
+

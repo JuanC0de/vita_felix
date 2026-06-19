@@ -4,12 +4,13 @@
  * Cambiar estas formas es un Revalidation Trigger (ver design.md).
  */
 
-/** Los cuatro roles reconocidos por la plataforma. */
+/** Los cinco roles reconocidos por la plataforma. */
 export const APP_ROLES = [
   'SUPER_ADMIN',
   'COMPANY_ADMIN',
   'EVENT_MANAGER',
   'GATE_STAFF',
+  'LOGISTICS',
 ] as const
 
 export type AppRole = (typeof APP_ROLES)[number]

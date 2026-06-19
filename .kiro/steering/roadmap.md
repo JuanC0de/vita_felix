@@ -31,6 +31,7 @@ El proyecto se construye sobre Nuxt 4 + Vue 3 + TypeScript + Tailwind CSS, usand
   - **Tipos TypeScript base** (definidos en `platform-foundation`): tipos de dominio compartidos (roles, company, sesión) reutilizados aguas abajo.
 
 ## Specs (dependency order)
-- [ ] platform-foundation -- Base Nuxt 4 + Supabase, esquema multi-tenant, RLS, Supabase Auth, RBAC (4 roles), login y shell del dashboard, tipos TS base. Dependencies: none
-- [ ] event-management -- CRUD de events y ticket_tiers con servicios y composables; pantallas de listado de eventos, crear evento y configurar boletería. Dependencies: platform-foundation
-- [ ] ticketing-checkin -- Registro público de asistentes, generación de ticket PDF con QR JWT firmado (sin cédula), Supabase Storage, escáner QR, validación server-side y check-in atómico. Dependencies: event-management
+- [x] platform-foundation -- Base Nuxt 4 + Supabase, esquema multi-tenant, RLS, Supabase Auth, RBAC (4 roles), login y shell del dashboard, tipos TS base. Dependencies: none
+- [x] event-management -- CRUD de events y ticket_tiers con servicios y composables; pantallas de listado de eventos, crear evento y configurar boletería. Dependencies: platform-foundation
+- [x] ticketing-checkin -- Registro público de asistentes, generación de ticket PDF con QR JWT firmado (sin cédula), Supabase Storage, escáner QR, validación server-side y check-in atómico. Dependencies: event-management
+- [ ] door-sales-and-cash-control -- Registro rápido de ventas en puerta, sesiones de caja (apertura/cierre) y control financiero en taquilla. Dependencies: ticketing-checkin

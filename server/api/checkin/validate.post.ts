@@ -16,7 +16,7 @@ import type { CheckinResult } from '../../../app/types/ticketing'
  * Body: { token: string }.
  */
 export default defineEventHandler(async (event): Promise<CheckinResult> => {
-  await requireRole(event, ['GATE_STAFF', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER'])
+  await requireRole(event, ['GATE_STAFF', 'SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER', 'LOGISTICS'])
 
   const body = (await readBody(event)) as { token?: unknown; eventId?: unknown }
   const token = typeof body?.token === 'string' ? body.token.trim() : ''

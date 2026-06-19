@@ -78,6 +78,21 @@ export default defineEventHandler(async (event) => {
     ? Math.round((usedCount / issuedCount) * 100) 
     : 0
 
+  // 3.1) Obtener ingresos de taquilla física desglosados por método de pago
+  const { data: doorSalesData } = await db
+    .from('door_sales')
+    .select('amount, payment_method')
+    .eq('event_id', id)
+
+  const doorSales = doorSalesData || []
+  const doorRevenueCash = doorSales
+    .filter((s: any) => s.payment_method === 'cash')
+    .reduce((acc: number, s: any) => acc + Number(s.amount), 0)
+  const doorRevenueCard = doorSales
+    .filter((s: any) => s.payment_method === 'card')
+    .reduce((acc: number, s: any) => acc + Number(s.amount), 0)
+  const doorRevenueTotal = doorRevenueCash + doorRevenueCard
+
   // 4) Ventas por etapa (tiers)
   const salesByTier = await Promise.all(
     ticketTiers.map(async (t) => {
@@ -116,7 +131,11 @@ export default defineEventHandler(async (event) => {
       ticketsUsed: usedCount,
       estimatedRevenue,
       doorEntryPct,
+      doorRevenueCash,
+      doorRevenueCard,
+      doorRevenueTotal
     },
     salesByTier,
   }
 })
+
