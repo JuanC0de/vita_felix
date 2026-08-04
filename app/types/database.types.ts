@@ -31,6 +31,10 @@ export interface Database {
           max_events: number
           max_users: number
           commission_percentage: number
+          wompi_enabled: boolean
+          wompi_public_key: string | null
+          wompi_integrity_secret: string | null
+          wompi_events_secret: string | null
         }
         Insert: {
           id?: string
@@ -49,6 +53,10 @@ export interface Database {
           max_events?: number
           max_users?: number
           commission_percentage?: number
+          wompi_enabled?: boolean
+          wompi_public_key?: string | null
+          wompi_integrity_secret?: string | null
+          wompi_events_secret?: string | null
         }
         Update: {
           id?: string
@@ -67,6 +75,10 @@ export interface Database {
           max_events?: number
           max_users?: number
           commission_percentage?: number
+          wompi_enabled?: boolean
+          wompi_public_key?: string | null
+          wompi_integrity_secret?: string | null
+          wompi_events_secret?: string | null
         }
         Relationships: []
       }
@@ -307,6 +319,57 @@ export interface Database {
           surcharge_applied?: boolean
           surcharge_paid?: number
           created_at?: string
+        }
+        Relationships: []
+      }
+      payment_transactions: {
+        Row: {
+          id: string
+          company_id: string
+          event_id: string
+          reference: string
+          wompi_id: string | null
+          amount_in_cents: number
+          currency: string
+          status: 'pending' | 'approved' | 'declined' | 'voided' | 'error'
+          attendees_data: Json
+          audit_note: string | null
+          audited_by: string | null
+          audited_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          event_id: string
+          reference: string
+          wompi_id?: string | null
+          amount_in_cents: number
+          currency?: string
+          status?: 'pending' | 'approved' | 'declined' | 'voided' | 'error'
+          attendees_data: Json
+          audit_note?: string | null
+          audited_by?: string | null
+          audited_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          event_id?: string
+          reference?: string
+          wompi_id?: string | null
+          amount_in_cents?: number
+          currency?: string
+          status?: 'pending' | 'approved' | 'declined' | 'voided' | 'error'
+          attendees_data?: Json
+          audit_note?: string | null
+          audited_by?: string | null
+          audited_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Relationships: []
       }

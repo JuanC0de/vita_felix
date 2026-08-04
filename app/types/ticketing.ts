@@ -53,7 +53,6 @@ export interface PublicTier {
   currency: string
 }
 
-/** Datos públicos de un evento publicado, para el formulario de registro. */
 export interface PublicEvent {
   id: string
   name: string
@@ -61,6 +60,8 @@ export interface PublicEvent {
   eventAt: string
   flyerUrl: string | null
   tiers: PublicTier[]
+  wompiEnabled?: boolean
+  wompiPublicKey?: string | null
 }
 
 /** Payload del formulario público de registro. */
@@ -127,4 +128,65 @@ export interface DoorSale {
   paymentMethod: 'cash' | 'card'
   createdAt: string
 }
+
+/** Transacción de pago online (Wompi) */
+export interface PaymentTransaction {
+  id: string
+  companyId: string
+  eventId: string
+  reference: string
+  wompiId: string | null
+  amountInCents: number
+  currency: string
+  status: 'pending' | 'approved' | 'declined' | 'voided' | 'error'
+  attendeesData: Array<{
+    tierId: string
+    fullName: string
+    email: string
+    cedula: string
+  }>
+  auditedBy: string | null
+  auditedAt: string | null
+  auditNote: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+/** Entrada para el endpoint de creación de checkout consolidado */
+export interface CreateCheckoutInput {
+  eventId: string
+  items: Array<{
+    tierId: string
+    quantity: number
+  }>
+  attendees: Array<{
+    tierId: string
+    fullName: string
+    email: string
+    cedula: string
+  }>
+}
+
+/** Resultado retornado tras crear el checkout */
+export interface CreateCheckoutResult {
+  reference: string
+  amountInCents: number
+  currency: string
+  wompiPublicKey: string
+  signature: string
+  redirectUrl: string
+}
+
+/** Entrada para el endpoint de forzar emisión manual en soporte */
+export interface ForceIssueInput {
+  transactionId: string
+  auditNote: string
+}
+
+/** Resultado retornado tras forzar emisión manual */
+export interface ForceIssueResult {
+  success: boolean
+  emittedTickets: string[]
+}
+
 

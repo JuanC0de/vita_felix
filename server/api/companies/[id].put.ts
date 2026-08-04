@@ -36,6 +36,21 @@ export default defineEventHandler(async (event) => {
     logo_url: body.logoUrl?.trim() || null,
   }
 
+  // Permitir la actualización de campos de Wompi tanto a SUPER_ADMIN como a COMPANY_ADMIN de su propia empresa
+  if (body.wompiEnabled !== undefined) {
+    updateData.wompi_enabled = !!body.wompiEnabled
+  }
+  if (body.wompiPublicKey !== undefined) {
+    updateData.wompi_public_key = body.wompiPublicKey?.trim() || null
+  }
+  if (body.wompiIntegritySecret !== undefined) {
+    updateData.wompi_integrity_secret = body.wompiIntegritySecret?.trim() || null
+  }
+  if (body.wompiEventsSecret !== undefined) {
+    updateData.wompi_events_secret = body.wompiEventsSecret?.trim() || null
+  }
+
+
   // Solo SUPER_ADMIN puede alterar planes, estado y comisiones
   if (ctx.role === 'SUPER_ADMIN') {
     if (body.plan) updateData.plan = body.plan

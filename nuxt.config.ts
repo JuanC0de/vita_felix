@@ -20,6 +20,14 @@ export default defineNuxtConfig({
     qrJwtSecret: '',
     attendeeEncKey: '',
     qrGraceHours: '12',
+    public: {
+      // Origen público de la app (sin slash final). Se usa para construir la
+      // redirect-url de Wompi, que rechaza con 403 los hosts no públicos como
+      // localhost. En desarrollo, apúntalo a un túnel (ngrok/cloudflared) para
+      // probar el retorno completo desde la pasarela.
+      // Sobreescribible con NUXT_PUBLIC_SITE_URL.
+      siteUrl: '',
+    },
   },
 
   vite: {

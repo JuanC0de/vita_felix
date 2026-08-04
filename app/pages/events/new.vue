@@ -13,8 +13,8 @@ async function onSubmit(payload: EventCreate) {
   try {
     const created = await create(payload)
     await navigateTo(`/events/${created.id}`)
-  } catch {
-    serverError.value = 'No se pudo crear el evento. Verifica los datos e inténtalo de nuevo.'
+  } catch (err: any) {
+    serverError.value = err.data?.message || err.data?.statusMessage || 'No se pudo crear el evento. Verifica los datos e inténtalo de nuevo.'
   } finally {
     loading.value = false
   }

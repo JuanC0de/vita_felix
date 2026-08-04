@@ -27,6 +27,7 @@ export default defineAppConfig({
         { label: 'Empresas', to: '/admin/companies', roles: ['SUPER_ADMIN'] },
         { label: 'Usuarios', to: '/admin/users', roles: ['SUPER_ADMIN', 'COMPANY_ADMIN'] },
         { label: 'Eventos', to: '/events', roles: ['SUPER_ADMIN', 'COMPANY_ADMIN', 'EVENT_MANAGER'] },
+        { label: 'Auditoría de Pagos', to: '/admin/soporte/pagos', roles: ['SUPER_ADMIN', 'COMPANY_ADMIN'] },
       ]
     },
     {

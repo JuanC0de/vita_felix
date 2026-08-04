@@ -20,6 +20,11 @@ const maxEvents = ref(3)
 const maxUsers = ref(3)
 const commissionPercentage = ref(0)
 
+const wompiEnabled = ref(false)
+const wompiPublicKey = ref('')
+const wompiIntegritySecret = ref('')
+const wompiEventsSecret = ref('')
+
 const loading = ref(false)
 const error = ref('')
 
@@ -39,6 +44,10 @@ if (!isNew.value) {
     maxEvents.value = co.max_events
     maxUsers.value = co.max_users
     commissionPercentage.value = co.commission_percentage
+    wompiEnabled.value = co.wompi_enabled ?? false
+    wompiPublicKey.value = co.wompi_public_key || ''
+    wompiIntegritySecret.value = co.wompi_integrity_secret || ''
+    wompiEventsSecret.value = co.wompi_events_secret || ''
   } catch (err) {
     error.value = 'No se pudo cargar la información de la empresa.'
   } finally {
@@ -68,6 +77,10 @@ async function onSubmit() {
     maxEvents: maxEvents.value,
     maxUsers: maxUsers.value,
     commissionPercentage: commissionPercentage.value,
+    wompiEnabled: wompiEnabled.value,
+    wompiPublicKey: wompiPublicKey.value.trim() || null,
+    wompiIntegritySecret: wompiIntegritySecret.value.trim() || null,
+    wompiEventsSecret: wompiEventsSecret.value.trim() || null,
   }
 
   try {
@@ -86,7 +99,7 @@ async function onSubmit() {
 </script>
 
 <template>
-  <div class="max-w-2xl space-y-6">
+  <div class="max-w-4xl space-y-6">
     <!-- AppPageHeader -->
     <AppPageHeader
       :title="isNew ? 'Registrar nueva empresa' : 'Editar empresa organizadora'"
@@ -211,6 +224,47 @@ async function onSubmit() {
             />
           </div>
         </div>
+
+        <hr class="border-slate-100" />
+
+        <!-- Pasarela de Pagos Wompi -->
+        <div>
+          <h3 class="text-sm font-semibold uppercase tracking-wider text-slate-500 mb-4">
+            Integración Pasarela de Pagos (Wompi)
+          </h3>
+          <div class="space-y-4">
+            <label class="flex items-center gap-3 cursor-pointer">
+              <input
+                v-model="wompiEnabled"
+                type="checkbox"
+                class="h-4.5 w-4.5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+              />
+              <span class="text-sm font-bold text-slate-700">Habilitar recaudo en línea con Wompi</span>
+            </label>
+
+            <div v-if="wompiEnabled" class="grid grid-cols-1 gap-5 pt-2">
+              <AppInput
+                v-model="wompiPublicKey"
+                label="Llave pública de comercio"
+                placeholder="Ej: pub_test_xxxxxxxx"
+                required
+              />
+              <AppInput
+                v-model="wompiIntegritySecret"
+                label="Secreto de integridad"
+                placeholder="Ej: test_integrity_xxxxxxxx"
+                required
+              />
+              <AppInput
+                v-model="wompiEventsSecret"
+                label="Secreto de eventos (Webhook)"
+                placeholder="Ej: evt_test_xxxxxxxx"
+                required
+              />
+            </div>
+          </div>
+        </div>
+
 
         <!-- Botones -->
         <div class="flex justify-end gap-3 pt-4 border-t border-slate-100">

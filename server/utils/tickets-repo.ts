@@ -40,11 +40,11 @@ export async function getPublicEvent(event: H3Event, eventId: string): Promise<P
   const db = serviceRoleClient(event)
   const { data: ev, error } = await db
     .from('events')
-    .select('id, name, venue, event_at, status, company_id, flyer_url')
+    .select('id, name, venue, event_at, status, company_id, flyer_url, companies(wompi_enabled, wompi_public_key)')
     .eq('id', eventId)
     .maybeSingle()
   if (error) fail('No se pudo cargar el evento')
-  const row = ev as unknown as PublicEventRow | null
+  const row = ev as any
   if (!row || row.status !== 'published') return null
 
   const { data: tiers } = await db
@@ -53,12 +53,16 @@ export async function getPublicEvent(event: H3Event, eventId: string): Promise<P
     .eq('event_id', eventId)
     .order('created_at', { ascending: true })
 
+  const company = row.companies
+
   return {
     id: row.id,
     name: row.name,
     venue: row.venue,
     eventAt: row.event_at,
     flyerUrl: row.flyer_url,
+    wompiEnabled: company ? !!company.wompi_enabled : false,
+    wompiPublicKey: company ? company.wompi_public_key : null,
     tiers: ((tiers ?? []) as Array<{ id: string; name: string; price: number | string; currency: string }>).map(
       (t) => ({
         id: t.id,
@@ -450,4 +454,202 @@ export async function sellTicketAtDoor(
     status: 'admitted'
   }
 }
+
+/**
+ * Emisión consolidada de boletas para una transacción de pago online (Wompi) aprobada.
+ * Se ejecuta con SERVICE ROLE para omitir RLS durante el webhook.
+ */
+export async function issueTicketsForTransaction(
+  event: H3Event,
+  transactionId: string,
+  auditFields?: { auditedBy: string; auditNote: string } | null
+): Promise<string[]> {
+  const db = serviceRoleClient(event)
+  const { qrSecret, encKey, graceHours } = getTicketingSecrets()
+
+  // 1) Consultar la transacción de pago
+  const { data: tx, error: txErr } = await db
+    .from('payment_transactions')
+    .select('*')
+    .eq('id', transactionId)
+    .maybeSingle()
+
+  if (txErr || !tx) {
+    fail('No se encontró la transacción de pago asociada.', 404)
+  }
+
+  // Comprobar si ya fue aprobada (idempotencia)
+  if (tx.status === 'approved') {
+    return [] // Retornar array vacío para indicar que ya se emitieron
+  }
+
+  const attendeesData = tx.attendees_data as Array<{
+    tierId: string
+    fullName: string
+    email: string
+    cedula: string
+  }>
+
+  // 2) Obtener detalles del evento
+  const { data: ev } = await db
+    .from('events')
+    .select('id, name, venue, event_at, status, company_id, flyer_url, theme_config, companies(name)')
+    .eq('id', tx.event_id)
+    .maybeSingle()
+  const eventRow = ev as any
+  if (!eventRow) {
+    fail('No se pudo encontrar el evento de la transacción.', 404)
+  }
+
+  const eventEpoch = Math.floor(new Date(eventRow.event_at).getTime() / 1000)
+  const exp = eventEpoch + graceHours * 3600
+  const emittedTicketIds: string[] = []
+
+  // 3) Emitir cada boleta de manera secuencial dentro del proceso del servidor
+  for (const att of attendeesData) {
+    const { data: tier } = await db
+      .from('ticket_tiers')
+      .select('id, name, entry_time_limit')
+      .eq('id', att.tierId)
+      .eq('event_id', tx.event_id)
+      .maybeSingle()
+    const tierRow = tier as any
+    if (!tierRow) {
+      fail(`La etapa de boletería seleccionada (${att.tierId}) no es válida.`, 422)
+    }
+
+    // Insertar asistente
+    const cedulaHash = hashCedula(att.cedula, encKey)
+    const { data: attendee, error: aErr } = await db
+      .from('attendees')
+      .insert({
+        company_id: eventRow.company_id,
+        event_id: tx.event_id,
+        full_name: att.fullName,
+        email: att.email,
+        cedula_enc: encryptCedula(att.cedula, encKey),
+        cedula_hash: cedulaHash,
+      })
+      .select('id')
+      .single()
+
+    if (aErr || !attendee) {
+      fail(`No se pudo registrar al asistente "${att.fullName}". Confirma que su cédula no esté ya registrada.`, 409)
+    }
+    const attendeeId = (attendee as any).id
+
+    // Insertar ticket
+    const { data: ticket, error: tErr } = await db
+      .from('tickets')
+      .insert({
+        company_id: eventRow.company_id,
+        event_id: tx.event_id,
+        tier_id: att.tierId,
+        attendee_id: attendeeId,
+        channel: 'online',
+        status: 'valid'
+      })
+      .select('id')
+      .single()
+
+    if (tErr || !ticket) {
+      fail('No se pudo emitir el ticket de la boleta.', 500)
+    }
+    const ticketId = (ticket as any).id
+    emittedTicketIds.push(ticketId)
+
+    // Generar token QR y PDF
+    const qrToken = signToken({ sub: ticketId, exp }, qrSecret)
+    const entryTimeLimit = tierRow.entry_time_limit ? tierRow.entry_time_limit.substring(0, 5) : null
+
+    const pdfBytes = await generateTicketPdf({
+      qrToken,
+      eventName: eventRow.name,
+      venue: eventRow.venue,
+      eventAt: eventRow.event_at,
+      tierName: tierRow.name,
+      attendeeName: att.fullName,
+      ticketId,
+      flyerUrl: eventRow.flyer_url,
+      themeConfig: eventRow.theme_config,
+      organizerName: eventRow.companies ? eventRow.companies.name : null,
+      entryTimeLimit,
+    })
+
+    const pdfPath = `${ticketId}.pdf`
+    const { error: upErr } = await db.storage
+      .from(BUCKET)
+      .upload(pdfPath, Buffer.from(pdfBytes), { contentType: 'application/pdf', upsert: true })
+
+    if (upErr) {
+      fail('No se pudo guardar la boleta en el almacenamiento.', 500)
+    }
+
+    await db.from('tickets').update({ pdf_path: pdfPath }).eq('id', ticketId)
+
+    // Enviar correo de confirmación
+    try {
+      const formattedDate = new Date(eventRow.event_at).toLocaleDateString('es-CO', {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'America/Bogota'
+      })
+
+      await sendEmail({
+        to: att.email,
+        subject: `Tu entrada para ${eventRow.name}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <h2 style="color: #4f46e5; margin-bottom: 20px;">¡Hola ${att.fullName}!</h2>
+            <p>Tu entrada para el evento <strong>${eventRow.name}</strong> ha sido generada exitosamente.</p>
+            
+            <div style="background-color: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0; border: 1px solid #f1f5f9;">
+              <p style="margin: 5px 0;"><strong>Evento:</strong> ${eventRow.name}</p>
+              <p style="margin: 5px 0;"><strong>Fecha:</strong> ${formattedDate}</p>
+              <p style="margin: 5px 0;"><strong>Lugar:</strong> ${eventRow.venue}</p>
+              <p style="margin: 5px 0;"><strong>Tipo de Entrada:</strong> ${tierRow.name}</p>
+              ${entryTimeLimit ? `<p style="margin: 5px 0; color: #b45309;"><strong>Límite de ingreso:</strong> Ingreso válido hasta las ${entryTimeLimit}</p>` : ''}
+            </div>
+
+            <p>Adjunto a este correo encontrarás tu ticket de ingreso en formato PDF con el código QR de acceso.</p>
+            <p>Por favor, asegúrate de presentarlo en la entrada del evento.</p>
+            
+            <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="font-size: 12px; color: #64748b; text-align: center;">Este es un correo automático de confirmación de Vita Felix.</p>
+          </div>
+        `,
+        attachments: [
+          {
+            filename: `ticket_${ticketId.substring(0, 8)}.pdf`,
+            content: Buffer.from(pdfBytes),
+            contentType: 'application/pdf'
+          }
+        ]
+      })
+    } catch (emailErr) {
+      console.error('Error al enviar correo automático de entrada online:', emailErr)
+    }
+  }
+
+  // 4) Actualizar la transacción de pago
+  const updateData: Record<string, any> = {
+    status: 'approved',
+    updated_at: new Date().toISOString()
+  }
+
+  if (auditFields) {
+    updateData.audited_by = auditFields.auditedBy
+    updateData.audited_at = new Date().toISOString()
+    updateData.audit_note = auditFields.auditNote
+  }
+
+  await db.from('payment_transactions').update(updateData).eq('id', transactionId)
+
+  return emittedTicketIds
+}
+
 

@@ -6,6 +6,7 @@ definePageMeta({ layout: 'public' })
 const route = useRoute()
 const eventId = route.params.eventId as string
 const { getEvent, register } = useRegistration()
+const { openCheckout } = useWompiCheckout()
 
 const defaultTierId = computed(() => route.query.tier as string | undefined)
 
@@ -38,10 +39,75 @@ const progressPercentage = computed(() => {
   return Math.round((progressIndex.value / progressTotal.value) * 100)
 })
 
-async function onSubmit(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
+function failedPaymentMessage(status: string): string {
+  if (status === 'DECLINED') {
+    return 'El pago fue rechazado por la entidad financiera. Intenta con otro medio de pago.'
+  }
+  return 'La transacción no pudo procesarse. Por favor intenta de nuevo.'
+}
+
+async function submitWithPayment(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
+  processState.value = 'idle'
+
+  const itemsMap: Record<string, number> = {}
+  payload.forEach((a) => {
+    itemsMap[a.tierId] = (itemsMap[a.tierId] || 0) + 1
+  })
+  const items = Object.keys(itemsMap).map((tierId) => ({ tierId, quantity: itemsMap[tierId] }))
+
+  try {
+    const res = await $fetch<any>('/api/public/payments/create-checkout', {
+      method: 'POST',
+      body: { eventId, items, attendees: payload },
+    })
+
+    if (res.amountInCents === 0) {
+      await navigateTo(res.confirmUrl, { external: true })
+      return
+    }
+
+    // Abrir la pasarela. La promesa se resuelve cuando el widget informa un
+    // resultado o cuando el usuario cierra el modal.
+    const { redirected, transaction, failure } = await openCheckout({
+      wompiPublicKey: res.wompiPublicKey,
+      amountInCents: res.amountInCents,
+      currency: res.currency,
+      reference: res.reference,
+      signature: res.signature,
+      redirectUrl: res.redirectUrl,
+    })
+
+    // Se navegó al Web Checkout: la página se está descargando, no se
+    // debe liberar el estado de carga.
+    if (redirected) return
+
+    // El modal nunca se mostró: nada se cobró, se puede reintentar aquí mismo.
+    if (failure) {
+      serverError.value = failure
+      return
+    }
+
+    if (transaction && transaction.status !== 'APPROVED' && transaction.status !== 'PENDING') {
+      serverError.value = failedPaymentMessage(transaction.status ?? '')
+      return
+    }
+
+    // Sin resultado explícito (el widget no invoca su callback cuando el
+    // usuario cierra el modal, ni siquiera tras un pago aprobado), así que
+    // no se puede asumir un fallo: la página de confirmación consulta la
+    // referencia y espera el webhook, que es la fuente de verdad.
+    await navigateTo(res.confirmUrl, { external: true })
+  } catch (err: any) {
+    serverError.value =
+      err.data?.message ?? 'No se pudo iniciar el proceso de pago. Valida que no haya cédulas ya registradas.'
+  } finally {
+    processState.value = 'idle'
+    loading.value = false
+  }
+}
+
+async function submitLegacy(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
   processState.value = 'processing'
-  loading.value = true
-  serverError.value = ''
   progressTotal.value = payload.length
   progressIndex.value = 0
   registeredAttendees.value = []
@@ -61,7 +127,7 @@ async function onSubmit(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
         eventId,
       })
 
-      const tierName = event.value?.tiers.find(t => t.id === att.tierId)?.name ?? 'Entrada'
+      const tierName = event.value?.tiers.find((t) => t.id === att.tierId)?.name ?? 'Entrada'
 
       registeredAttendees.value.push({
         fullName: att.fullName,
@@ -80,14 +146,21 @@ async function onSubmit(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
       (e.statusCode === 409
         ? 'Ya existe un registro con esa cédula para este evento.'
         : 'No se pudo completar el registro de todos los asistentes. Verifica los datos e inténtalo de nuevo.')
-    
-    if (registeredAttendees.value.length > 0) {
-      processState.value = 'success'
-    } else {
-      processState.value = 'idle'
-    }
+
+    processState.value = registeredAttendees.value.length > 0 ? 'success' : 'idle'
   } finally {
     loading.value = false
+  }
+}
+
+async function onSubmit(payload: Array<Omit<RegistrationInput, 'eventId'>>) {
+  loading.value = true
+  serverError.value = ''
+
+  if (event.value?.wompiEnabled) {
+    await submitWithPayment(payload)
+  } else {
+    await submitLegacy(payload)
   }
 }
 
