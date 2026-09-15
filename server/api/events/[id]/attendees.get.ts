@@ -52,7 +52,7 @@ export default defineEventHandler(async (event) => {
       // Consulta base de ticket (campos que siempre existen)
       const { data: ticket, error: ticketErr } = await (db as any)
         .from('tickets')
-        .select('id, status, used_at, ticket_tiers(name)')
+        .select('id, status, used_at, is_courtesy, ticket_tiers(name, kind)')
         .eq('attendee_id', att.id)
         .maybeSingle()
 
@@ -90,6 +90,8 @@ export default defineEventHandler(async (event) => {
           status: ticket.status,
           usedAt: ticket.used_at,
           tierName: ticket.ticket_tiers?.name || 'Desconocido',
+          // Marca las invitaciones gratuitas para que no se lean como ventas
+          isCourtesy: !!(ticket as any).is_courtesy || ticket.ticket_tiers?.kind === 'courtesy',
           transferReceiptPath,
         } : null
       }

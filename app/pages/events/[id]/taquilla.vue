@@ -79,7 +79,7 @@
         <h3 class="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4 text-center sm:text-left">Selecciona la Etapa de Entrada</h3>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
-            v-for="tier in eventData?.tiers"
+            v-for="tier in saleTiers"
             :key="tier.id"
             @click="selectTier(tier)"
             class="group relative bg-slate-900 border border-slate-800 hover:border-indigo-500 hover:bg-slate-900/80 active:scale-98 p-6 rounded-2xl text-left transition-all duration-200 shadow-md flex items-center justify-between"
@@ -209,6 +209,9 @@ const openingBalance = ref<number>(0)
 const selectedTier = ref<any>(null)
 const successScreen = ref(false)
 const admittedTierName = ref('')
+
+// La taquilla solo vende: la etapa de cortesía se emite por enlace de invitación.
+const saleTiers = computed(() => (eventData.value?.tiers ?? []).filter((t: any) => t.kind !== 'courtesy'))
 
 // Carga inicial del estado
 const fetchState = async () => {

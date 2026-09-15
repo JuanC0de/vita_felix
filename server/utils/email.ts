@@ -1,5 +1,3 @@
-import { getTicketingSecrets } from './ticketing-config'
-
 interface EmailAttachment {
   filename: string
   content: Buffer

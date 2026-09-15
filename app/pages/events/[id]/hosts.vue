@@ -33,15 +33,20 @@ const roleOptions = [
   { value: 'GUEST', label: 'Invitado de Casa' },
 ]
 
+// La opción por defecto emite sobre la etapa de cortesía del evento (gratuita,
+// creada automáticamente). Las etapas de cortesía existentes no se listan como
+// opción explícita: ya son el destino de esa opción por defecto.
 const tierOptions = computed(() => {
-  const base = [{ value: '', label: 'Cortesía (Por defecto)' }]
+  const base = [{ value: '', label: 'Cortesía · entrada gratuita (recomendado)' }]
   if (!tierItems.value) return base
   return [
     ...base,
-    ...tierItems.value.map((t) => ({
-      value: t.id,
-      label: `${t.name} (${t.quota} aforo)`,
-    })),
+    ...tierItems.value
+      .filter((t) => t.kind !== 'courtesy')
+      .map((t) => ({
+        value: t.id,
+        label: `${t.name} (${t.quota} aforo · se cuenta como venta)`,
+      })),
   ]
 })
 
@@ -66,9 +71,10 @@ async function copyToClipboard(token: string) {
 }
 
 function getTierName(tId: string | null): string {
-  if (!tId || !tierItems.value) return 'Cortesía (Por defecto)'
+  if (!tId || !tierItems.value) return 'Cortesía · entrada gratuita'
   const t = tierItems.value.find((x) => x.id === tId)
-  return t ? t.name : 'Cortesía'
+  if (!t) return 'Cortesía'
+  return t.kind === 'courtesy' ? `${t.name} · entrada gratuita` : `${t.name} · se cuenta como venta`
 }
 
 async function onSubmit() {

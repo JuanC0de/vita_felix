@@ -47,10 +47,13 @@ export async function getPublicEvent(event: H3Event, eventId: string): Promise<P
   const row = ev as any
   if (!row || row.status !== 'published') return null
 
+  // Las etapas de cortesía (kind='courtesy') solo se emiten por enlace de
+  // invitación: nunca se listan en el formulario público de compra.
   const { data: tiers } = await db
     .from('ticket_tiers')
     .select('id, name, price, currency')
     .eq('event_id', eventId)
+    .eq('kind', 'sale')
     .order('created_at', { ascending: true })
 
   const company = row.companies
@@ -103,6 +106,7 @@ export async function registerAndIssue(
     .select('id, name, entry_time_limit')
     .eq('id', model.tierId)
     .eq('event_id', eventId)
+    .eq('kind', 'sale')
     .maybeSingle()
   const tierRow = tier as unknown as { id: string; name: string; entry_time_limit: string | null } | null
   if (!tierRow) fail('La etapa de boletería seleccionada no es válida', 422)
@@ -356,6 +360,7 @@ export async function sellTicketAtDoor(
     .select('id, name, quota, price')
     .eq('id', tierId)
     .eq('event_id', eventId)
+    .eq('kind', 'sale')
     .maybeSingle()
   const tierRow = tier as unknown as { id: string; name: string; quota: number; price: number | string } | null
   if (!tierRow) {
@@ -512,6 +517,7 @@ export async function issueTicketsForTransaction(
       .select('id, name, entry_time_limit')
       .eq('id', att.tierId)
       .eq('event_id', tx.event_id)
+      .eq('kind', 'sale')
       .maybeSingle()
     const tierRow = tier as any
     if (!tierRow) {

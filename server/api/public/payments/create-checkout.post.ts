@@ -141,6 +141,7 @@ export default defineEventHandler(async (event) => {
     .from('ticket_tiers')
     .select('id, name, price, quota, currency')
     .eq('event_id', eventId)
+    .eq('kind', 'sale')
 
   if (tiersError || !tiersData) {
     throw createError({ statusCode: 500, statusMessage: 'No se pudieron consultar las etapas de boletería.' })

@@ -181,6 +181,7 @@ export interface Database {
           event_id: string
           company_id: string
           name: string
+          kind: string
           price: number
           currency: string
           quota: number
@@ -194,6 +195,7 @@ export interface Database {
           event_id: string
           company_id: string
           name: string
+          kind?: string
           price?: number
           currency: string
           quota?: number
@@ -207,6 +209,7 @@ export interface Database {
           event_id?: string
           company_id?: string
           name?: string
+          kind?: string
           price?: number
           currency?: string
           quota?: number
@@ -261,6 +264,7 @@ export interface Database {
           used_at: string | null
           pdf_path: string | null
           transfer_receipt_path: string | null
+          is_courtesy: boolean
           created_at: string
         }
         Insert: {
@@ -273,6 +277,7 @@ export interface Database {
           used_at?: string | null
           pdf_path?: string | null
           transfer_receipt_path?: string | null
+          is_courtesy?: boolean
           created_at?: string
         }
         Update: {
@@ -285,6 +290,7 @@ export interface Database {
           used_at?: string | null
           pdf_path?: string | null
           transfer_receipt_path?: string | null
+          is_courtesy?: boolean
           created_at?: string
         }
         Relationships: []

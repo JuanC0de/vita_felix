@@ -179,10 +179,14 @@ async function copyTierLink(tierId: string) {
               <div>
                 <div class="flex items-center gap-2">
                   <span class="font-bold text-slate-950 text-base">{{ t.name }}</span>
-                  <AppBadge variant="success">Activa</AppBadge>
+                  <AppBadge v-if="t.kind === 'courtesy'" variant="warning">Cortesía</AppBadge>
+                  <AppBadge v-else variant="success">Activa</AppBadge>
                 </div>
                 <p class="text-xs text-slate-500 mt-1">
                   Precio: <span class="font-semibold text-slate-800">{{ fmtPrice(t) }}</span> · Cupo: {{ t.quota }}
+                </p>
+                <p v-if="t.kind === 'courtesy'" class="text-[10px] text-amber-600 font-semibold mt-1">
+                  Etapa automática de invitaciones · no se muestra en la página pública de compra
                 </p>
                 <p v-if="t.entryTimeLimit" class="text-[10px] text-amber-600 font-semibold mt-1">
                   🕒 Límite de ingreso: hasta las {{ t.entryTimeLimit }} · Recargo: {{ new Intl.NumberFormat('es-CO', { style: 'currency', currency: t.currency, maximumFractionDigits: 0 }).format(t.surchargeAmount ?? 0) }}
@@ -200,6 +204,7 @@ async function copyTierLink(tierId: string) {
 
               <div class="flex items-center gap-2 self-end sm:self-auto">
                 <AppButton
+                  v-if="t.kind !== 'courtesy'"
                   size="sm"
                   :variant="copiedTierId === t.id ? 'primary' : 'secondary'"
                   class="shrink-0 min-w-[95px]"

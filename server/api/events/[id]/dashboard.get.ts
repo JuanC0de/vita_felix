@@ -33,16 +33,22 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 403, statusMessage: 'Acceso denegado' })
   }
 
-  // 2) Obtener etapas de boletería (tiers) y calcular capacidad
+  // 2) Obtener etapas de boletería (tiers) y calcular capacidad.
+  //    La etapa de cortesía (kind='courtesy') no es aforo en venta: se reporta
+  //    aparte para que el aforo de preventa no se vea consumido por invitaciones.
   const { data: tiers, error: tiersErr } = await db
     .from('ticket_tiers')
-    .select('id, name, price, currency, quota')
+    .select('id, name, price, currency, quota, kind')
     .eq('event_id', id)
 
   const ticketTiers = tiers ?? []
+  const saleTiers = ticketTiers.filter((t: any) => t.kind !== 'courtesy')
 
-  // Capacidad total = suma de quotas de tiers
-  const capacityTotal = ticketTiers.reduce((acc, t) => acc + (t.quota || 0), 0)
+  // Capacidad total = suma de quotas de las etapas de venta
+  const capacityTotal = saleTiers.reduce((acc, t) => acc + (t.quota || 0), 0)
+  const courtesyCapacity = ticketTiers
+    .filter((t: any) => t.kind === 'courtesy')
+    .reduce((acc, t) => acc + (t.quota || 0), 0)
 
   // 3) Obtener conteos de tickets
   const { count: ticketsIssued } = await db
@@ -57,15 +63,26 @@ export default defineEventHandler(async (event) => {
     .eq('event_id', id)
     .eq('status', 'used')
 
+  const { count: courtesiesIssuedRaw } = await db
+    .from('tickets')
+    .select('*', { count: 'exact', head: true })
+    .eq('event_id', id)
+    .eq('is_courtesy', true)
+    .neq('status', 'void')
+
   const issuedCount = ticketsIssued || 0
   const usedCount = ticketsUsed || 0
-  const availableCount = Math.max(0, capacityTotal - issuedCount)
+  const courtesiesIssued = courtesiesIssuedRaw || 0
+  // Boletas realmente vendidas: lo emitido menos las invitaciones gratuitas
+  const soldCount = Math.max(0, issuedCount - courtesiesIssued)
+  const availableCount = Math.max(0, capacityTotal - soldCount)
 
-  // Ingresos estimados del evento
+  // Ingresos estimados del evento (las cortesías no son ventas)
   const { data: ticketSales } = await db
     .from('tickets')
     .select('ticket_tiers(price)')
     .eq('event_id', id)
+    .eq('is_courtesy', false)
     .neq('status', 'void')
 
   const estimatedRevenue = (ticketSales ?? []).reduce((acc: number, t: any) => {
@@ -95,23 +112,39 @@ export default defineEventHandler(async (event) => {
 
   // 4) Ventas por etapa (tiers)
   const salesByTier = await Promise.all(
-    ticketTiers.map(async (t) => {
-      const { count: sold } = await db
+    ticketTiers.map(async (t: any) => {
+      const { count: issued } = await db
         .from('tickets')
         .select('*', { count: 'exact', head: true })
         .eq('tier_id', t.id)
         .neq('status', 'void')
-      
-      const soldCount = sold || 0
+
+      // Una etapa de venta puede tener cortesías encima (anfitrión con etapa
+      // explícita): ocupan cupo pero no generan ingreso.
+      const { count: courtesies } = await db
+        .from('tickets')
+        .select('*', { count: 'exact', head: true })
+        .eq('tier_id', t.id)
+        .eq('is_courtesy', true)
+        .neq('status', 'void')
+
+      const issuedCountTier = issued || 0
+      const courtesyCountTier = courtesies || 0
+      const soldCountTier = Math.max(0, issuedCountTier - courtesyCountTier)
+
       return {
         id: t.id,
         name: t.name,
+        kind: t.kind ?? 'sale',
+        isCourtesy: t.kind === 'courtesy',
         price: Number(t.price),
         currency: t.currency.trim(),
         quota: t.quota,
-        sold: soldCount,
-        available: Math.max(0, t.quota - soldCount),
-        revenue: soldCount * Number(t.price),
+        issued: issuedCountTier,
+        sold: soldCountTier,
+        courtesies: courtesyCountTier,
+        available: Math.max(0, t.quota - issuedCountTier),
+        revenue: soldCountTier * Number(t.price),
       }
     })
   )
@@ -126,7 +159,10 @@ export default defineEventHandler(async (event) => {
     },
     metrics: {
       capacityTotal,
+      courtesyCapacity,
       ticketsIssued: issuedCount,
+      ticketsSold: soldCount,
+      courtesiesIssued,
       ticketsAvailable: availableCount,
       ticketsUsed: usedCount,
       estimatedRevenue,

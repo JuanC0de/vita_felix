@@ -160,9 +160,9 @@ onMounted(async () => {
           subtext="Asistentes validados"
         />
         <AppStatCard
-          title="Capacidad Total"
+          title="Capacidad en Venta"
           :value="dashboard?.metrics?.capacityTotal ?? 0"
-          subtext="Cupo total sumando etapas"
+          subtext="Cupo sumando etapas de venta (sin cortesías)"
         />
         <AppStatCard
           title="Venta Puerta (Total)"
@@ -180,14 +180,19 @@ onMounted(async () => {
           subtext="Transado por datáfonos"
         />
         <AppStatCard
-          title="Tickets Emitidos"
-          :value="dashboard?.metrics?.ticketsIssued ?? 0"
-          subtext="Boletas vendidas/emitidas"
+          title="Boletas Vendidas"
+          :value="dashboard?.metrics?.ticketsSold ?? 0"
+          :subtext="`Emitidas en total: ${dashboard?.metrics?.ticketsIssued ?? 0} (incluye cortesías)`"
+        />
+        <AppStatCard
+          title="Cortesías Emitidas"
+          :value="dashboard?.metrics?.courtesiesIssued ?? 0"
+          subtext="Invitaciones gratuitas · no generan ingreso"
         />
         <AppStatCard
           title="Tickets Disponibles"
           :value="dashboard?.metrics?.ticketsAvailable ?? 0"
-          subtext="Aforo restante disponible"
+          subtext="Aforo de venta restante"
         />
         <AppStatCard
           title="Tickets Usados"
@@ -211,13 +216,25 @@ onMounted(async () => {
               <div class="flex justify-between text-xs font-semibold text-slate-700">
                 <div>
                   <span class="font-bold">{{ tier.name }}</span>
-                  <span class="text-slate-400 font-normal ml-2">({{ fmtMoney(tier.price) }})</span>
+                  <span v-if="tier.isCourtesy" class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800">
+                    Cortesía
+                  </span>
+                  <span v-else class="text-slate-400 font-normal ml-2">({{ fmtMoney(tier.price) }})</span>
                 </div>
-                <span>{{ tier.sold }} / {{ tier.quota }} vendidos</span>
+                <span v-if="tier.isCourtesy">{{ tier.issued }} / {{ tier.quota }} emitidas</span>
+                <span v-else>{{ tier.sold }} / {{ tier.quota }} vendidos</span>
               </div>
-              <AppProgressBar :value="tier.sold" :max="tier.quota" variant="success" />
+              <AppProgressBar
+                :value="tier.isCourtesy ? tier.issued : tier.sold"
+                :max="tier.quota"
+                :variant="tier.isCourtesy ? 'warning' : 'success'"
+              />
               <div class="flex justify-between text-[10px] text-slate-400">
-                <span>Ingreso estimado: {{ fmtMoney(tier.revenue) }}</span>
+                <span v-if="tier.isCourtesy">Entrada gratuita · no genera ingreso</span>
+                <span v-else>
+                  Ingreso estimado: {{ fmtMoney(tier.revenue) }}
+                  <template v-if="tier.courtesies > 0"> · {{ tier.courtesies }} cortesía(s) sobre esta etapa</template>
+                </span>
                 <span>Cupo disponible: {{ tier.available }}</span>
               </div>
             </div>

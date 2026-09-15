@@ -8,6 +8,7 @@ import type {
   EventWithTiers,
   EventWriteModel,
   TicketTier,
+  TierKind,
   TierWriteModel,
 } from '../../app/types/events'
 
@@ -38,6 +39,7 @@ interface TierRow {
   event_id: string
   company_id: string
   name: string
+  kind: TierKind
   price: number | string
   currency: string
   quota: number
@@ -48,7 +50,7 @@ interface TierRow {
 }
 
 const EVENT_COLUMNS = 'id, company_id, name, venue, event_at, status, description, flyer_url, theme_config, created_at, updated_at'
-const TIER_COLUMNS = 'id, event_id, company_id, name, price, currency, quota, entry_time_limit, surcharge_amount, created_at, updated_at'
+const TIER_COLUMNS = 'id, event_id, company_id, name, kind, price, currency, quota, entry_time_limit, surcharge_amount, created_at, updated_at'
 
 function mapEvent(row: EventRow): Event {
   return {
@@ -72,6 +74,7 @@ function mapTier(row: TierRow): TicketTier {
     eventId: row.event_id,
     companyId: row.company_id,
     name: row.name,
+    kind: row.kind ?? 'sale',
     // numeric() puede llegar como string desde postgres; normalizamos a número.
     price: typeof row.price === 'string' ? Number(row.price) : row.price,
     currency: row.currency.trim(),
@@ -219,11 +222,22 @@ export async function updateTier(
   model: TierWriteModel,
 ): Promise<TicketTier | null> {
   const client = await userClient(event)
+
+  // La etapa de cortesía es gratuita por definición: se puede renombrar o
+  // reajustar el cupo, pero nunca ponerle precio (volvería a contar como venta).
+  const { data: current } = await client
+    .from('ticket_tiers')
+    .select('kind')
+    .eq('id', tierId)
+    .eq('event_id', eventId)
+    .maybeSingle()
+  const isCourtesy = (current as unknown as { kind: TierKind } | null)?.kind === 'courtesy'
+
   const { data, error } = await client
     .from('ticket_tiers')
     .update({
       name: model.name,
-      price: model.price,
+      price: isCourtesy ? 0 : model.price,
       currency: model.currency,
       quota: model.quota,
       entry_time_limit: model.entryTimeLimit,

@@ -142,12 +142,13 @@ function exportCSV() {
   const list = filteredAttendees.value ?? []
   if (list.length === 0) return
   
-  const headers = ['Nombre', 'Documento', 'Correo', 'Tipo de Ticket', 'Estado Ticket', 'Check-in', 'Fecha Registro']
+  const headers = ['Nombre', 'Documento', 'Correo', 'Tipo de Ticket', 'Origen', 'Estado Ticket', 'Check-in', 'Fecha Registro']
   const rows = list.map(a => [
     a.fullName,
     a.cedula,
     a.email,
     a.ticket?.tierName || 'Sin asignar',
+    a.ticket?.isCourtesy ? 'Cortesía' : 'Venta',
     a.ticket?.status || 'N/A',
     a.ticket?.status === 'used' ? 'Ingresó' : 'Pendiente',
     new Date(a.createdAt).toLocaleString('es-CO')
@@ -182,11 +183,15 @@ const manualSuccessPdfUrl = ref('')
 const manualHasReceipt = ref(false)
 const manualReceiptFile = ref<File | null>(null)
 
+// El registro manual emite una entrada normal: la etapa de cortesía se reserva
+// a los enlaces de invitación, que son los que llevan el control de cupos.
+const saleTiers = computed(() => (ev.value?.tiers ?? []).filter((t: any) => t.kind !== 'courtesy'))
+
 function openManualModal() {
   manualFullName.value = ''
   manualCedula.value = ''
   manualEmail.value = ''
-  manualTierId.value = ev.value?.tiers[0]?.id || ''
+  manualTierId.value = saleTiers.value[0]?.id || ''
   manualErrors.value = {}
   manualSuccessTicketId.value = ''
   manualSuccessPdfUrl.value = ''
@@ -361,7 +366,13 @@ function openReceipt(ticketId: string) {
 
         <!-- Tipo Ticket -->
         <td class="px-6 py-4 text-xs font-bold text-slate-600">
-          {{ att.ticket?.tierName || 'Desconocido' }}
+          <span>{{ att.ticket?.tierName || 'Desconocido' }}</span>
+          <span
+            v-if="att.ticket?.isCourtesy"
+            class="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-800"
+          >
+            Cortesía
+          </span>
         </td>
 
         <!-- Estado ticket -->
@@ -556,7 +567,7 @@ function openReceipt(ticketId: string) {
               v-model="manualTierId"
               class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-slate-900 focus:outline-none bg-white"
             >
-              <option v-for="t in ev?.tiers" :key="t.id" :value="t.id">
+              <option v-for="t in saleTiers" :key="t.id" :value="t.id">
                 {{ t.name }} — {{ t.price === 0 ? 'Gratis' : `${t.price.toLocaleString('es-CO')} ${t.currency}` }}
               </option>
             </select>

@@ -42,12 +42,21 @@ export interface Event {
   updatedAt: string
 }
 
+/**
+ * Clasificación de una etapa de boletería.
+ * - `sale`: se vende al público (formulario web, Wompi, taquilla).
+ * - `courtesy`: solo se emite por enlace de invitación; precio 0 y nunca listada
+ *   en el formulario público de compra.
+ */
+export type TierKind = 'sale' | 'courtesy'
+
 /** Etapa de boletería de un evento (p. ej. preventa, general, VIP). */
 export interface TicketTier {
   id: string
   eventId: string
   companyId: string
   name: string
+  kind: TierKind
   /** Precio monetario, mayor o igual a cero (0 = gratis). */
   price: number
   /** Moneda en formato ISO 4217 (tres letras mayúsculas). */

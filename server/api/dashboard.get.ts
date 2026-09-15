@@ -41,11 +41,12 @@ export default defineEventHandler(async (event) => {
       .select('*', { count: 'exact', head: true })
       .eq('status', 'used')
 
-    // Ingresos estimados totales (suma de precios de tickets vendidos)
-    // Hacemos un join entre tickets y ticket_tiers
+    // Ingresos estimados totales (suma de precios de tickets vendidos).
+    // Las cortesías se excluyen: son invitaciones gratuitas, no ventas.
     const { data: ticketSales } = await db
       .from('tickets')
       .select('ticket_tiers(price)')
+      .eq('is_courtesy', false)
 
     const estimatedRevenue = (ticketSales ?? []).reduce((acc: number, t: any) => {
       const price = t.ticket_tiers?.price ? Number(t.ticket_tiers.price) : 0
@@ -164,11 +165,12 @@ export default defineEventHandler(async (event) => {
       .eq('company_id', companyId)
       .eq('status', 'used')
 
-    // Ingresos estimados de la empresa
+    // Ingresos estimados de la empresa (sin cortesías: no son ventas)
     const { data: ticketSales } = await db
       .from('tickets')
       .select('ticket_tiers(price)')
       .eq('company_id', companyId)
+      .eq('is_courtesy', false)
 
     const estimatedRevenue = (ticketSales ?? []).reduce((acc: number, t: any) => {
       const price = t.ticket_tiers?.price ? Number(t.ticket_tiers.price) : 0
