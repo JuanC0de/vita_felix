@@ -25,10 +25,13 @@ function fmtPrice(t: TicketTier): string {
   return new Intl.NumberFormat('es-CO', { style: 'currency', currency: t.currency, maximumFractionDigits: 0 }).format(t.price)
 }
 
+// La etapa de cortesía no vende nada, así que su ocupación se mide por boletas
+// emitidas; en una etapa de venta se mide por vendidas (sin contar cortesías).
 function getSoldProgress(tierId: string): { sold: number; quota: number } {
   if (!dashboard.value?.salesByTier) return { sold: 0, quota: 0 }
   const t = dashboard.value.salesByTier.find((x: any) => x.id === tierId)
-  return t ? { sold: t.sold, quota: t.quota } : { sold: 0, quota: 0 }
+  if (!t) return { sold: 0, quota: 0 }
+  return { sold: t.isCourtesy ? t.issued : t.sold, quota: t.quota }
 }
 
 async function onCreate(payload: TierCreate) {
@@ -196,10 +199,14 @@ async function copyTierLink(tierId: string) {
               <!-- Barra de Progreso de Aforo -->
               <div class="w-full sm:w-64 space-y-1">
                 <div class="flex justify-between text-[10px] text-slate-500">
-                  <span>Aforo vendido:</span>
+                  <span>{{ t.kind === 'courtesy' ? 'Cortesías emitidas:' : 'Aforo vendido:' }}</span>
                   <span>{{ getSoldProgress(t.id).sold }} / {{ t.quota }}</span>
                 </div>
-                <AppProgressBar :value="getSoldProgress(t.id).sold" :max="t.quota" variant="primary" />
+                <AppProgressBar
+                  :value="getSoldProgress(t.id).sold"
+                  :max="t.quota"
+                  :variant="t.kind === 'courtesy' ? 'warning' : 'primary'"
+                />
               </div>
 
               <div class="flex items-center gap-2 self-end sm:self-auto">
